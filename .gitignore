@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environment (API keys live in .env; never commit it)
+.env
+.env.*
+!.env.example
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+
+# Downloaded dataset: TAT-QA is not redistributed here; `make data` fetches it.
+/data/

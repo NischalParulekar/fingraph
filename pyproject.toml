@@ -1,0 +1,49 @@
+[project]
+name = "fingraph"
+version = "0.1.0"
+description = "Does LangGraph orchestration beat a single tool-loop agent on hybrid table+text financial QA (TAT-QA)?"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "anthropic>=2.11.0",
+    "duckdb>=2.0.0",
+    "numpy>=2.5.5",
+    "pandas>=3.1.1",
+    "python-dotenv>=1.2.4",
+    "scipy>=1.18.1",
+    "sentence-transformers>=6.3.0",
+    "torch>=2.15.0",
+]
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.170.16",
+    "pytest>=9.2.0",
+    "ruff>=0.17.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["fingraph"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+extend-exclude = ["fingraph/eval/tatqa_official"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+# CPU-only PyTorch (pulled in by sentence-transformers): the default Linux wheel brings
+# gigabytes of CUDA that a laptop and CI don't need.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
