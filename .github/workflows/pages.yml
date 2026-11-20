@@ -3,12 +3,12 @@
 # scripts/build_demo.py) and needs no server or key. If the repository variable API_URL
 # holds a deployed API's address (the Render service from render.yaml, or the AWS
 # CloudFront URL), a live build that talks to it is published under live/ as well.
-#
-# Run by hand for now (Actions > Pages > Run workflow): GitHub Pages on a private
-# repository needs a paid plan, so it is not triggered on push until Pages is enabled.
 name: Pages
 
 on:
+  push:
+    branches: [main]
+    paths: ["frontend/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:

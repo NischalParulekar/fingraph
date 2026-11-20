@@ -4,8 +4,10 @@ A LangGraph multi-agent analyst that answers questions over financial reports th
 tables and text (TAT-QA), and an honest experiment on whether graph orchestration beats a
 single tool-loop agent that has the same tools and the same model.
 
-**Status:** the experiment is finished and written up below. The API is live on Render's
-free tier at <https://fingraph-api-3psv.onrender.com> (try `/healthz`; it sleeps when idle,
+**Status:** the experiment is finished and written up below. **Try it:** the
+[recorded demo](https://nischalparulekar.github.io/fingraph/) replays real runs at no cost,
+and the [live demo](https://nischalparulekar.github.io/fingraph/live/) asks the API, which
+runs on Render's free tier at <https://fingraph-api-3psv.onrender.com> (it sleeps when idle,
 so the first request can take a minute). The AWS deployment is written but not running.
 Every number in this README comes from a committed run in `results/` with its config and
 raw outputs.
@@ -333,9 +335,11 @@ the draft there.
 It runs two ways. **Recorded** (`npm run dev:recorded`, and the GitHub Pages site)
 replays 14 dev questions from the committed runs (`make demo` rebuilds
 `frontend/public/demo.json`, no model calls); every answer is exactly what the run
-recorded. **Live** (`make stack`, then `make ui`) asks the API. GitHub Pages
-(`.github/workflows/pages.yml`, run by hand) needs the repository to be public or a
-paid plan.
+recorded. **Live** (`make stack`, then `make ui`) asks the API. Both are published on
+GitHub Pages by `.github/workflows/pages.yml`: the
+[recorded demo](https://nischalparulekar.github.io/fingraph/) and, against the Render API
+(the `API_URL` repository variable), the
+[live demo](https://nischalparulekar.github.io/fingraph/live/).
 
 ## Deployment
 
