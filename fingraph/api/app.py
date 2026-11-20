@@ -43,8 +43,8 @@ from redis.exceptions import RedisError
 from fingraph.api.config import Settings
 from fingraph.api.metrics import Metrics
 from fingraph.api.store import Store, answer_key
+from fingraph.api.view import run_view
 from fingraph.data.tatqa import Example
-from fingraph.eval.offline_verify import check, inputs_from_trace
 from fingraph.llm import Spend
 from fingraph.scales import SCALES
 from fingraph.tools.retriever import backend
@@ -56,7 +56,6 @@ ARM_NAMES = {
     "graph": "B: graph",
     "graph_verifier": "C: graph + verifier",
 }
-MAX_EVIDENCE = 60
 
 
 class AskRequest(BaseModel):
@@ -124,15 +123,6 @@ def postgres_checkpointer(url: str):
     except Exception:
         log.exception("Postgres is not reachable; Arm C is off")
         return None, None
-
-
-def _report_dict(report) -> dict:
-    return {
-        "passed": report.passed,
-        "supported": [dataclasses.asdict(c) for c in report.supported],
-        "unsupported": [dataclasses.asdict(c) for c in report.unsupported],
-        "scale_problems": report.scale_problems,
-    }
 
 
 def create_app(
@@ -208,32 +198,6 @@ def create_app(
                 400, f"Ask a question of 1 to {settings.max_question_chars} characters."
             )
         return dataclasses.replace(example, question=question)
-
-    def result_of(arm_name: str, prediction, example: Example) -> dict:
-        """What the client sees of a finished run: answer, evidence and the verifier."""
-        record = {"answer": prediction.answer, "scale": prediction.scale, "trace": prediction.trace}
-        state = prediction.trace[-1] if prediction.trace else {}
-        reports = state.get("verifier_reports") if isinstance(state, dict) else None
-        if reports:  # Arm C: its own last verdict
-            verifier = {k: reports[-1][k] for k in ("passed", "supported", "unsupported")}
-            verifier["scale_problems"] = reports[-1]["scale_problems"]
-            verifier["source"] = "arm"
-        else:  # A and B: the same verifier, run after the fact
-            verifier = {**_report_dict(check(record, example)), "source": "offline"}
-        evidence, calculations = inputs_from_trace(prediction.trace)
-        return {
-            "answer": prediction.answer,
-            "scale": prediction.scale,
-            "abstained": not prediction.answer,
-            "error": prediction.error,
-            "evidence": [dataclasses.asdict(e) for e in evidence[:MAX_EVIDENCE]],
-            "calculations": [dataclasses.asdict(c) for c in calculations],
-            "verifier": verifier,
-            "llm_calls": prediction.llm_calls,
-            "tokens": prediction.tokens,
-            "cost_usd": prediction.cost_usd,
-            "arm_latency_ms": prediction.latency_ms,
-        }
 
     def account(arm_name: str, spend_or_prediction) -> None:
         p = spend_or_prediction
@@ -384,7 +348,7 @@ def create_app(
             account(body.arm, prediction)
             cost = prediction.cost_usd
 
-        result = result_of(body.arm, prediction, example)
+        result = run_view(prediction, example)
         run_record = {**base, "status": "done", **result, "latency_ms": elapsed * 1000}
         outcome = "abstained" if result["abstained"] else "answered"
         metrics.asks.labels(body.arm, outcome).inc()
@@ -426,7 +390,7 @@ def create_app(
         command = Command(resume=decision)
         final = await asyncio.to_thread(arm.run, example, command, spend, thread_id)
         prediction = arm.prediction(final, spend, time.perf_counter() - started)
-        result = result_of(run["arm"], prediction, example)
+        result = run_view(prediction, example)
         done = {
             **{k: run[k] for k in ("thread_id", "arm", "uid", "context_uid", "question")},
             "status": "done",
