@@ -33,3 +33,19 @@ jobs:
         run: uv run ruff check . && uv run ruff format --check .
       - name: Test
         run: uv run pytest
+
+  terraform:
+    # Checks the AWS configuration without an AWS account: format and validity only.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/aws
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+      - name: Format
+        run: terraform fmt -check -recursive
+      - name: Validate
+        run: terraform init -backend=false -input=false && terraform validate
