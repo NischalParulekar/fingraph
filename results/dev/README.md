@@ -9,6 +9,7 @@ changed after looking at these very questions. Only held-out runs go in the main
 | `single_agent-v2` | answer rules v2 (scale, span copying, sign), always search the text | 116/150 = 77.3% | 0.851 | 22.7% | $0.55 |
 | `single_agent-v2-rerun` | none: v2 run again, to measure noise | 114/150 = 76.0% | 0.838 | 24.0% | $0.55 |
 | `graph` (Arm B v1) | first version of the graph, same answer rules v2 | 88/150 = 58.7% | 0.637 | 41.3% | $0.84 |
+| `graph-v2` (Arm B v2) | planner sees the top paragraphs and labelled table rows | 105/150 = 70.0% | 0.790 | 30.0% | $0.80 |
 
 v1 → v2, paired on EM: 17 wins, 4 losses, 129 ties, sign test p = 0.007.
 
@@ -29,3 +30,10 @@ table alone 81% vs 90%). Two design faults in the graph, not in the model: the p
 which cannot see the paragraphs, asked for a text lookup on only 31 of 150 questions
 although 81 need the text; and it sometimes named empty cells (8 failed calculations).
 Arm B v1 has had no iteration yet, while Arm A has had one round.
+
+**Arm B v2** fixes both faults: B v1 → v2 is 26 wins, 9 losses (p = 0.006); table-text
+EM rose from 41% to 74%, and failed calculations fell from 8 to 3. Against Arm A v2 it is
+still behind: 5 wins, 16 losses (p = 0.027; against A's rerun, 4 and 13, p = 0.049),
+at 1.46x the cost per question ($0.80 vs $0.55 per 1k) and p50 4.7 s vs 3.3 s. The
+remaining gap is mostly in text-only questions (43% vs 51%) and single spans (58% vs
+61%). Each arm has now had one round of dev iteration.
