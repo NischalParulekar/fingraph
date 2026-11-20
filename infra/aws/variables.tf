@@ -38,3 +38,19 @@ variable "image_tag" {
   type        = string
   default     = "latest"
 }
+
+variable "llm_provider" {
+  description = "anthropic (the direct API, needs the key) or bedrock (the task role calls Bedrock)."
+  type        = string
+  default     = "anthropic"
+  validation {
+    condition     = contains(["anthropic", "bedrock"], var.llm_provider)
+    error_message = "llm_provider must be anthropic or bedrock."
+  }
+}
+
+variable "bedrock_model_id" {
+  description = "The global cross-region inference profile for Claude Haiku 5.5 (docs/bedrock.md)."
+  type        = string
+  default     = "global.anthropic.claude-haiku-5-5"
+}

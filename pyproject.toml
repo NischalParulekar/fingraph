@@ -5,6 +5,7 @@ description = "Does LangGraph orchestration beat a single tool-loop agent on hyb
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "anthropic>=2.11.0",
+    "boto3>=1.44.7",
     "duckdb>=2.0.0",
     "fastapi>=0.165.0",
     "langchain-core>=1.8.4",

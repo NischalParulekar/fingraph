@@ -370,6 +370,76 @@ applied first. It costs about $60 a month left running (about $2 a day), so it i
 to be up for a few days to record the demo and then destroyed; see
 [infra/aws/README.md](infra/aws/README.md) for the estimate, the steps and the limits.
 
+## Running on Bedrock
+
+Every model call goes through `fingraph/llm.py`. `LLM_PROVIDER=bedrock` sends the same
+request through Amazon Bedrock's Converse API (`fingraph/bedrock.py`) instead of the
+Anthropic API, and gets back the same response shape and token counts, so the arms and
+the cost accounting are unchanged. The default stays `anthropic`; every frozen result
+used it.
+
+[docs/bedrock.md](docs/bedrock.md) has the facts checked against AWS's documentation on
+21 November 2026, with sources:
+
+- **Availability:** Haiku 5.5 is on Bedrock. From `ap-south-1` (Mumbai) it is reachable
+  only through the global cross-region profile `global.anthropic.claude-haiku-5-5`.
+- **Price:** the global profile costs the same as the direct API.
+- **Caching and effort:** both are passed in `additionalModelRequestFields`, as FinGraph
+  sends them on the direct API.
+- **Mapping and errors:** how each part of the request maps, and how errors are
+  handled. Throttling is retried with backoff and jitter, and each call's retries are
+  recorded in its trace.
+
+```powershell
+aws configure sso    # once: an SSO profile, no access keys
+```
+
+Then, in a git-ignored `.env` or the environment:
+
+| Variable | Value |
+|---|---|
+| `LLM_PROVIDER` | `bedrock` |
+| `AWS_PROFILE` | the SSO profile's name (on ECS, the task role is used instead) |
+| `AWS_REGION` | e.g. `ap-south-1` |
+| `BEDROCK_MODEL_ID` | optional; defaults to `global.anthropic.claude-haiku-5-5` |
+
+Before the first call:
+
+1. Set a budget alarm (the command is in [docs/bedrock.md](docs/bedrock.md#budget-alarm-before-the-first-call)).
+2. Make the first call with an identity allowed to subscribe to the model through AWS
+   Marketplace. That first call is the only access step; there is no request form for
+   Haiku 5.5.
+
+**On AWS.** `infra/aws` takes `llm_provider = "bedrock"`. The ECS task role then gets
+`bedrock:InvokeModel` on that one inference profile and on its foundation model when
+reached through it, and nothing else (`infra/aws/bedrock.tf`).
+
+`make bedrock-dev` runs Arm C on the dev subset through each provider in turn, and
+`make bedrock-report` compares them (`results/bedrock-dev/`).
+
+## Tracing with LangSmith
+
+With `LANGSMITH_TRACING=true` and a `LANGSMITH_API_KEY`, each question becomes one
+LangSmith trace:
+
+- the graph's nodes, traced by LangGraph itself;
+- every model call as an LLM run, with its token usage, including cache reads and
+  writes;
+- every tool call (`query_table`, `retrieve_text`, `calculate`) as a tool run.
+
+Tracing is off by default and only observes, so runs with it on send the model the same
+requests.
+
+The arms call the model through the Anthropic SDK rather than a LangChain chat model:
+
+- that keeps the request (effort, caching) and the cost accounting identical across
+  arms and providers;
+- swapping it now would change the frozen arms.
+
+LangChain's own parts are used where they fit: LangGraph for the graph arms and their
+human review, `langchain-postgres` (PGVector) for the corpus retriever, `langchain-core`
+embeddings, and LangSmith for traces.
+
 ## Running it
 
 ```
@@ -381,6 +451,7 @@ make plots      # the plots and Arm C's coverage replay (free)
 make db         # Postgres 16 + pgvector in Docker, and index the paragraphs
 make stack      # the API with Postgres, Redis, Prometheus and Grafana (needs .env)
 make ui         # the demo UI on :5173 against the API
+make bedrock-report  # the API vs Bedrock dev table, from the committed runs (free)
 ```
 
 Paid runs need `ANTHROPIC_API_KEY` in a git-ignored `.env` (see `.env.example`), and each
@@ -393,11 +464,13 @@ should not be repeated without a note here.
 fingraph/data      TAT-QA loader and the frozen splits (question IDs in splits/)
 fingraph/tools     DuckDB table sandbox, retrievers (in memory, pgvector), calculator
 fingraph/arms      single_agent.py (A), graph.py (B and C)
+fingraph/llm.py    the one model wrapper; bedrock.py maps it to the Converse API
 fingraph/verifier  the evidence verifier, standalone
 fingraph/eval      runner, official scorer, statistics, report, plots, error analysis
 fingraph/api       FastAPI service: ask, runs, review resume, cache, metrics
 frontend/          the demo UI (React + Vite)
-infra/aws/         Terraform for the temporary AWS deployment
+infra/aws/         Terraform for the temporary AWS deployment (bedrock.tf: the task role)
+docs/              bedrock.md: Bedrock availability, prices, caching, effort, IAM
 results/           every run's config, predictions with traces, and summaries
 ```
 
