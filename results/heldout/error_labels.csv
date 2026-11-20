@@ -1,0 +1,151 @@
+arm,uid,answer_from,answer_type,bucket,note,labelled_by,reviewed
+single_agent,ca3b22acafffb620d3deda515bbccf57,table-text,multi-span,answer_form,"table cells (12,586) thousand; gold quotes text $12.6 million",claude,no
+single_agent,9f6491d767032159922ae7b2d7e025e3,text,span,answer_form,split into 3 items incl. an extra one; gold one span,claude,no
+single_agent,ce73c7927786de6e65f628b4afdb76dd,text,span,answer_form,extra words 'exclusively to us',claude,no
+single_agent,ba4d1603666b347b325b7f9f31573bc8,text,span,answer_form,one phrase split into a list,claude,no
+single_agent,ccfc74ecc489f611ae4f5685cfb354e0,text,span,planning,gave the table title; gold is the paragraph describing it,claude,no
+single_agent,4e02f54a4ad0af10c8f2ccc939d9396a,text,span,answer_form,span too short,claude,no
+single_agent,332a37c0d6f010a0ee6810b907adb0ab,table,arithmetic,table_query,"used the wrong rows (73.1, 59.2) for largest/smallest",claude,no
+single_agent,fa64104d2b254454e60202e0c24ff9dc,text,span,answer_form,span too short,claude,no
+single_agent,169c8ca0af907215a2c57c0fe2f25053,text,span,answer_form,span missing leading 'as',claude,no
+single_agent,22c6b672ffb5e3be9b0651f46898773e,text,span,planning,listed customer types; gold is the stated reason,claude,no
+single_agent,cd28daf1b5dafb877634c4bcb1c468bd,text,span,answer_form,"added 'Structured', cut the span short",claude,no
+single_agent,c8a174f7806948a5f8e2db2446367e13,text,span,answer_form,span missing its subject,claude,no
+single_agent,b7cb9deee91596540a0e61f6ef10b4d8,table-text,span,scale,missed 'in thousands' stated in a paragraph,claude,no
+single_agent,428359977c232b88b7cb609205de5e04,text,span,answer_form,span missing 'range from',claude,no
+single_agent,a23b3dcb820703a1d9aea7dc33091afb,table,arithmetic,answer_form,"sign: -26,490 vs gold 26,490 for 'difference'",claude,no
+single_agent,41a751bd0e1105fa875a7ed4d0051fba,table,arithmetic,gold_label,"gold 29,810-19,105; the table's total assets row is 48,915 = pred",claude,no
+single_agent,d06c686c798b7f12bb3217764a542527,table,arithmetic,gold_label,(0.47+0.12)/2 = 0.295: half-up and half-even both give 0.30; gold 0.29,claude,no
+single_agent,12b99bc9e7f7dc268193acf071ecfdaf,text,span,answer_form,span missing 'among the',claude,no
+single_agent,243d029fde48f37c5b86a605a2fc6f72,text,span,answer_form,answered '30%'; gold is the whole sentence,claude,no
+single_agent,bd2b6555ad74c76f74cb479b0215eded,table-text,span,answer_form,"table cell (149,389) thousand; gold quotes text $149.4 million",claude,no
+single_agent,f65bc5a189414ccb21ae21bbdd22245a,table,span,planning,gave two values for one figure,claude,no
+single_agent,fabe3b6a76158d5e91d4d3bab10fe51e,table-text,count,scale,count given scale thousand,claude,no
+single_agent,ccba5ee4e0e933f5b41b0148d493bc4c,table-text,multi-span,scale,missed 'in thousands' stated in a paragraph,claude,no
+single_agent,f2fe29ddabd4d939646a0c71704b60aa,text,span,planning,computed a difference; gold quotes the text,claude,no
+single_agent,2870200c1799c44402bc9135e7b68daf,text,span,gold_label,gold span runs into an unrelated bullet; pred is the stated cause,claude,no
+single_agent,8db7f46bf649c3befa9d8020ccad6874,text,span,answer_form,span missing 'due to' and its tail,claude,no
+single_agent,7f9ac26d62e28f2366b9453d13c78fc1,table,arithmetic,arithmetic,"calculate gave 905.0078; answered 905.00, not 905.01",claude,no
+single_agent,1c2cc847d7badaddece34c58473b71fd,text,multi-span,answer_form,paraphrased item names,claude,no
+single_agent,99f77f6a84c3ba2f350bbffa9fcf3e64,text,span,planning,"ambiguous: took the FY2018 comparative, gold the Sept 2018 raise; also scale",claude,no
+single_agent,8be7331907754560e0edbc5d0ad52b27,text,span,answer_form,span includes its subject,claude,no
+single_agent,363e5b4e5f1d5e1fd5819d862a4340cf,text,span,planning,wrong part of the paragraph,claude,no
+single_agent,62f5c4cba4e328b1ffe8eaa6c329bd1e,text,span,answer_form,span missing 'The increase was',claude,no
+single_agent,7822c08381f47d253e30e315b8c7cf03,table-text,count,scale,count given scale thousand,claude,no
+single_agent,81f47bab187b044b80a807f813271c58,text,span,answer_form,span includes 'The Company uses a',claude,no
+single_agent,cf774f6bcde2d8681b99b375c9902ec3,text,span,gold_label,text: 65nm volume production began in 2006 (pred); 2011 is 28nm,claude,no
+single_agent,dd5932654955fd5f6c14401cbfe7d8ad,table,arithmetic,planning,"wrong formula: difference of totals, not of averages",claude,no
+single_agent,8bdc5d0e036bee3e14bcf9f9a16b776f,table,arithmetic,scale,percent 32.21 vs gold ratio 0.32,claude,no
+single_agent,b610b2e2b8975ae32ecd9774c45d7979,table,arithmetic,scale,percent 1.83 vs gold ratio 0.02,claude,no
+single_agent,646fdf5774eafc1db2ca26899c6fcb60,table,multi-span,planning,extra item 'Interest income',claude,no
+single_agent,e798612f7b362bf8def3436937307191,table,arithmetic,gold_label,'percentage change' 40%->30% is -25%; gold uses the point difference -10,claude,no
+single_agent,de48128dd966339965e26e5aff46bbdc,table,span,answer_form,same item twice; gold once,claude,no
+single_agent,3043971ee8b1d77cdbebedeec092a2d4,table-text,span,scale,missed 'in thousands' stated in a paragraph,claude,no
+single_agent,3699a34071087425aeb759e2a26a4f23,table-text,count,scale,count given scale thousand,claude,no
+single_agent,32533d1bd67d1ad3e0d03442495e23f0,table-text,span,planning,computed -4.27; text states 'improved by 4.3%',claude,no
+single_agent,ea04ef99bd2e5a0ec0abda707cb3b52a,text,span,answer_form,span missing 'costs include',claude,no
+single_agent,61037b64d7f42743484bd78063fa2a63,text,span,answer_form,one span split into two items,claude,no
+single_agent,0103b1e44ef0047d788e2cd47d5e7f8c,text,multi-span,retrieval_miss,paragraph 7 (License and Collaboration...) never retrieved,claude,no
+single_agent,e3096b1ac65f83346bcf04e5020d1a3f,table-text,arithmetic,answer_form,"'(3,753)': the official scorer scores it 0, '-3,753' scores 1",claude,no
+single_agent,3d0d640a8a63cef330ccffb57cf87ceb,text,arithmetic,gold_label,"gold scale thousand on share counts the text gives in full (1,216,000)",claude,no
+single_agent,cc6823f9305ced1af85ac2ce5f77f3df,table-text,arithmetic,planning,listed both values instead of their total,claude,no
+graph,8db7f46bf649c3befa9d8020ccad6874,text,span,answer_form,"span: extra 'primarily', tail cut",claude,no
+graph,6c069ac5f02ac75e060313e1a2ca1cd8,text,span,answer_form,quoted 'Note 6'; gold is the whole sentence,claude,no
+graph,75521a39d33b66cb6e29a592d8636027,text,span,answer_form,span missing 'relates mainly to',claude,no
+graph,cd28daf1b5dafb877634c4bcb1c468bd,text,span,answer_form,"span: extra 'structured', cut short",claude,no
+graph,4be20501905f6e3edc14f95ebf7933b3,table-text,arithmetic,pipeline,"quote '$1.9 million' parses to no number, calc failed",claude,no
+graph,fc58bb9998b44e3423e5f6aa7df7b028,table-text,multi-span,scale,years given scale billion,claude,no
+graph,243d029fde48f37c5b86a605a2fc6f72,text,span,answer_form,answered '30%'; gold is the whole sentence,claude,no
+graph,539fa070ca866c8cdeeee1fa3d56d0dd,table-text,span,scale,missed 'in thousands' stated in a paragraph,claude,no
+graph,cf72b8288d2cdfcf9a59f8d879029243,text,span,answer_form,span missing 'uses',claude,no
+graph,2071846240269f8a75b1c9c42f365aef,text,span,scale,text span given scale billion,claude,no
+graph,62f5c4cba4e328b1ffe8eaa6c329bd1e,text,span,answer_form,span missing 'The increase was',claude,no
+graph,7d201138c55a318b114f8472e07d06da,text,multi-span,answer_form,'fiscal 2019' for '2019',claude,no
+graph,a26fe888a673a5d1d6f4d5f8c13aab32,table,span,scale,"scale thousand, gold none",claude,no
+graph,a2cec9bc9e41a2d0e39353adf5e5d244,table,arithmetic,table_query,"wrong row (12,002 / 1,726; gold 8,290 / 569)",claude,no
+graph,5c54743f6de457f4d0af525fc5ba37ed,table,arithmetic,answer_form,sign: change of two negative costs,claude,no
+graph,7f9ac26d62e28f2366b9453d13c78fc1,table,arithmetic,arithmetic,calc gave 905.0078; synthesizer wrote 905.00,claude,no
+graph,9aa04f2968dfabe3144285c4bf9277f9,table-text,span,scale,EPS given scale percent,claude,no
+graph,4e02f54a4ad0af10c8f2ccc939d9396a,text,span,answer_form,span too short,claude,no
+graph,61037b64d7f42743484bd78063fa2a63,text,span,retrieval_miss,"lookup query retrieved paras 7,10,8; answer in 6",claude,no
+graph,1419718d245e6762ab8e187b06212d5d,table-text,multi-span,answer_form,items missing 'thereof',claude,no
+graph,ccba5ee4e0e933f5b41b0148d493bc4c,table-text,multi-span,scale,missed 'in thousands' stated in a paragraph,claude,no
+graph,aed0cb4b76c2ebf21037804772519839,text,span,planning,computed 31.94; text states 32%,claude,no
+graph,79988a243da6bfe50860a248a57b5634,table,arithmetic,scale,"scale million, gold none",claude,no
+graph,d57a456ed635b1a301fd19144837f69b,text,multi-span,answer_form,"table cells ($ -, $752 thousand); gold quotes text $0, $0.8 million",claude,no
+graph,f65bc5a189414ccb21ae21bbdd22245a,table,span,planning,summed two rows; asked for one,claude,no
+graph,631f39ecd2dba43f94884cc0b27d729e,table-text,arithmetic,planning,"wrong formula: a change, gold sums all four",claude,no
+graph,43c792d0803c8cd37130be5e06db5ebc,text,span,answer_form,span missing 'result of',claude,no
+graph,3043971ee8b1d77cdbebedeec092a2d4,table-text,span,scale,missed 'in thousands' stated in a paragraph,claude,no
+graph,586b24199ab25b1747ae3573492f1ccb,table,arithmetic,scale,synthesizer set percent; planner said none,claude,no
+graph,02a6fbeb55b46d0ed218df0319ecffce,text,span,answer_form,two amounts; gold is the whole sentence,claude,no
+graph,f005fbea468ed191b98d44c447b868ba,table-text,span,gold_label,gold '$19.1 million' with scale thousand counts the unit twice,claude,no
+graph,ce73c7927786de6e65f628b4afdb76dd,text,span,answer_form,extra words 'exclusively to us',claude,no
+graph,635d756eb2458f9cb07ad2fc9ef5ce7a,table,count,planning,empty plan; answer said it cannot be determined,claude,no
+graph,9056a1ff4e2facdb93f139a8f7c60a65,table-text,span,planning,computed a difference; gold is the prior-quarter figure,claude,no
+graph,2642dd42d14315d3ab62a4a1754d0bad,table-text,span,scale,share count given scale thousand,claude,no
+graph,332a37c0d6f010a0ee6810b907adb0ab,table,arithmetic,planning,took two figures from the text; answer is in the table,claude,no
+graph,91add58b02eb761d380b13df7a61401a,table,arithmetic,table_query,"read total deferred tax assets, not total assets",claude,no
+graph,23fe1be9117b398035a9ead824b331a8,table,arithmetic,scale,"scale thousand, gold none",claude,no
+graph,0b268aa13efe3e52409849e3cd1b711c,table,multi-span,answer_form,same date twice,claude,no
+graph,d629fcff8592f6f2d8eaa97089abe3de,text,span,answer_form,span includes leading 'by',claude,no
+graph,cc5c000b89c342f017727ebeced22c54,table,arithmetic,table_query,swapped the 2018 and 2019 columns,claude,no
+graph,4478c71ff25482f914636301d4c2413a,table,arithmetic,planning,looked in the text; the values are table cells,claude,no
+graph,a7d1cbfe9fd8b97d8fdacad4dbe214e6,text,span,scale,dollar amount given scale percent,claude,no
+graph,b610b2e2b8975ae32ecd9774c45d7979,table,arithmetic,scale,percent 1.83 vs gold ratio 0.02,claude,no
+graph,2a9309359cd15e65d9937f9749279725,text,span,answer_form,extra 'option pricing model'; also scale billion,claude,no
+graph,251074b99618ccfe6106b218f831ef94,text,span,answer_form,span missing its subject,claude,no
+graph,8bdc5d0e036bee3e14bcf9f9a16b776f,table,arithmetic,scale,percent 32.21 vs gold ratio 0.32,claude,no
+graph,c8a174f7806948a5f8e2db2446367e13,text,span,answer_form,span missing its subject,claude,no
+graph,487d16d4c65d212490edf8096840da2d,table-text,span,answer_form,span missing 'The cash flows comprise',claude,no
+graph,ea04ef99bd2e5a0ec0abda707cb3b52a,text,span,answer_form,span missing 'costs include',claude,no
+graph_verifier,d96471e34f661f8d062757ba3f712cd9,table,arithmetic,gold_label,"asks operating over investing = 13,189/10,085 = 1.31 (pred); gold divides the other way",claude,no
+graph_verifier,e798612f7b362bf8def3436937307191,table,arithmetic,gold_label,'percentage change' 40%->30% is -25%; gold uses the point difference -10,claude,no
+graph_verifier,332a37c0d6f010a0ee6810b907adb0ab,table,arithmetic,planning,took two figures from the text; answer is in the table,claude,no
+graph_verifier,02a6fbeb55b46d0ed218df0319ecffce,text,span,answer_form,two amounts; gold is the whole sentence,claude,no
+graph_verifier,239ac320bf2943193d8bcf13605d6319,table,arithmetic,table_query,"used the amount rows (131/1,381); gold the per-share rows (10/105)",claude,no
+graph_verifier,2870200c1799c44402bc9135e7b68daf,text,span,gold_label,gold span runs into an unrelated bullet; pred is the stated cause,claude,no
+graph_verifier,de48128dd966339965e26e5aff46bbdc,table,span,answer_form,same item twice; gold once,claude,no
+graph_verifier,063a3796dad19cc0c92c71424a600946,text,span,answer_form,first bullet only; gold spans all,claude,no
+graph_verifier,8672104278996c87094a74016c6e2ffb,text,span,answer_form,span too short,claude,no
+graph_verifier,12b99bc9e7f7dc268193acf071ecfdaf,text,span,answer_form,extra 'of companies',claude,no
+graph_verifier,81f47bab187b044b80a807f813271c58,text,span,answer_form,span includes 'The Company uses a',claude,no
+graph_verifier,9f6491d767032159922ae7b2d7e025e3,text,span,answer_form,split into 3 items incl. an extra one; gold one span,claude,no
+graph_verifier,1d97637ce187754735e3ccd77409e237,table,span,scale,"scale thousand, gold none",claude,no
+graph_verifier,a23b3dcb820703a1d9aea7dc33091afb,table,arithmetic,answer_form,"sign: -26,490 vs gold 26,490 for 'difference'",claude,no
+graph_verifier,cc6823f9305ced1af85ac2ce5f77f3df,table-text,arithmetic,planning,listed both values instead of their total,claude,no
+graph_verifier,8ddab4f696534c10763a19b55229e415,table,arithmetic,gold_label,'percentage change' 2.7%->3.3% is 22.22%; gold uses the point difference 0.6,claude,no
+graph_verifier,2464a21560316d1eff84a8647733adb3,table,span,planning,"values are negative; gold compares absolute values, pred the signed ones",claude,no
+graph_verifier,bd2b6555ad74c76f74cb479b0215eded,table-text,span,scale,'$149.4 million' with scale percent; verifier passed it on a '%' elsewhere in the text,claude,no
+graph_verifier,6660bd6720b9c4d9150e048c2c9b63e0,table-text,multi-span,scale,names given scale million,claude,no
+graph_verifier,61037b64d7f42743484bd78063fa2a63,text,span,retrieval_miss,lookup query never retrieved para 6; abstained after 3 tries,claude,no
+graph_verifier,cc5c000b89c342f017727ebeced22c54,table,arithmetic,table_query,swapped the 2018 and 2019 columns,claude,no
+graph_verifier,cf774f6bcde2d8681b99b375c9902ec3,text,span,gold_label,text: 65nm volume production began in 2006 (pred); 2011 is 28nm,claude,no
+graph_verifier,4c9ee3a62029fd94fd8978737cb3276a,table-text,span,scale,missed 'in thousands' stated in a paragraph,claude,no
+graph_verifier,4e02f54a4ad0af10c8f2ccc939d9396a,text,span,answer_form,span too short,claude,no
+graph_verifier,a26fe888a673a5d1d6f4d5f8c13aab32,table,span,scale,"scale thousand, gold none",claude,no
+graph_verifier,79988a243da6bfe50860a248a57b5634,table,arithmetic,scale,"scale million, gold none",claude,no
+graph_verifier,75521a39d33b66cb6e29a592d8636027,text,span,answer_form,synthesizer dropped 'relates mainly to' from the quote,claude,no
+graph_verifier,cd28daf1b5dafb877634c4bcb1c468bd,text,span,answer_form,span cut short,claude,no
+graph_verifier,4cac8704d20d5c746d09258b90c49b09,table,span,table_query,"read 83,692; gold 66,128",claude,no
+graph_verifier,d2a8cd279ae55ad737ce418f4aeec0fe,table-text,multi-span,answer_form,one phrase for a two-year list,claude,no
+graph_verifier,985e3306cb2075bc0807db442ac8e23a,table-text,span,answer_form,one phrase split into a list,claude,no
+graph_verifier,9aab1000cf8d1e140d933d7f1b5226c0,text,span,answer_form,"computed 4,311 thousand; gold quotes text $4.3 million",claude,no
+graph_verifier,4c8709f777694f5ea71b7c56a0080bfa,text,span,scale,missed 'in thousands',claude,no
+graph_verifier,17fbe44670010dbf16d6229dbb59500b,text,span,scale,verifier rightly flagged scale million on '$41.8 million'; retries never fixed it; abstained,claude,no
+graph_verifier,99f77f6a84c3ba2f350bbffa9fcf3e64,text,span,planning,"ambiguous: took the FY2018 comparative, gold the Sept 2018 raise",claude,no
+graph_verifier,0b268aa13efe3e52409849e3cd1b711c,table,multi-span,answer_form,same date twice,claude,no
+graph_verifier,faf9f137376dc08ac692f904c7ab012d,table,span,scale,"scale million, gold none",claude,no
+graph_verifier,0cdd3bd97106aad28eaa14ba87afbbfe,text,span,answer_form,span too short,claude,no
+graph_verifier,b0b1580d6fd9fc014e30a5f20a25df66,table,count,scale,count given scale billion; verifier accepted the planner's constant '7' as a calculation,claude,no
+graph_verifier,995522509165f690157556078f2fdef7,text,span,answer_form,span includes leading 'by',claude,no
+graph_verifier,f005fbea468ed191b98d44c447b868ba,table-text,span,gold_label,gold '$19.1 million' with scale thousand counts the unit twice,claude,no
+graph_verifier,b610b2e2b8975ae32ecd9774c45d7979,table,arithmetic,scale,percent 1.83 vs gold ratio 0.02,claude,no
+graph_verifier,251074b99618ccfe6106b218f831ef94,text,span,answer_form,span missing its subject,claude,no
+graph_verifier,5da5c8d73c3c37c90a98aecb193f42df,table,span,table_query,picked the wrong row as the largest factor,claude,no
+graph_verifier,602cf3cf43944b171a7af0db93773379,text,span,answer_form,span includes 'valued',claude,no
+graph_verifier,0173550282fd1daf154239a105950031,text,span,answer_form,quoted 'Note 15'; gold is the longer phrase,claude,no
+graph_verifier,8db7f46bf649c3befa9d8020ccad6874,text,span,answer_form,span cut short,claude,no
+graph_verifier,9dfa7018eae65bf2917063da6c671668,table,span,table_query,read 36.4; gold 32.8,claude,no
+graph_verifier,10e3df9f6f165a446ad57ee5b9a1a1ad,text,span,scale,paragraph quote given scale thousand,claude,no
+graph_verifier,8be7331907754560e0edbc5d0ad52b27,text,span,answer_form,span includes its subject,claude,no

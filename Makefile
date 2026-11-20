@@ -5,7 +5,7 @@
 # make retrieval  retrieval hit/recall, context vs corpus mode (no model calls)
 # make test, make lint
 
-.PHONY: install data splits db retrieval test lint eval-dev-a eval-heldout report
+.PHONY: install data splits db retrieval test lint eval-dev-a eval-heldout report plots labels
 
 install:
 	uv sync --locked
@@ -46,3 +46,10 @@ eval-heldout:
 # Free: the README's held-out table and hypothesis tests, from the committed run files.
 report:
 	uv run python -m fingraph.eval.report results/heldout
+
+# Free: the held-out plots and Arm C's coverage replay, and the error-label tally.
+plots:
+	uv run python -m fingraph.eval.plots results/heldout
+
+labels:
+	uv run python -m fingraph.eval.error_labels

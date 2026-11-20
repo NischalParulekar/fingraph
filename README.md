@@ -119,6 +119,71 @@ Notes on the numbers:
 - Run-to-run noise: about 3% of questions change correctness between two identical runs
   (measured on dev; `results/dev/README.md`).
 
+![Held-out exact match by question type](results/heldout/plots/em_by_type.png)
+
+## Arm C: retries and verifier strictness
+
+Replayed from Arm C's held-out traces (`make plots`, `results/heldout/coverage.json`):
+attempt k is the same whatever the retry budget, so a budget of r answers with the first
+attempt up to r that passed the verifier and abstains otherwise.
+
+| Setting | Coverage | Selective accuracy | EM | Confident-wrong |
+|---|---|---|---|---|
+| B: no verifier | 100.0% | 69.2% | 69.2% | 30.8% |
+| C: 0 retries | 92.0% | 72.8% | 67.0% | 25.0% |
+| C: 1 retry | 97.4% | 73.1% | 71.2% | 26.2% |
+| C: 2 retries (the run) | 97.6% | 73.2% | 71.4% | 26.2% |
+| C: 0 retries, strict verifier | 83.6% | 72.2% | 60.4% | 23.2% |
+
+The retries are what keep EM: without them the verifier costs 2.2 points of EM for 5.8
+fewer points of confident-wrong. The second retry adds almost nothing. The strict
+verifier (which also flags a missing scale) answers less and is less accurate on what it
+answers, so it is off by default.
+
+![Arm C coverage against selective accuracy](results/heldout/plots/coverage.png)
+
+## Error analysis
+
+50 failures per arm, sampled with a fixed seed from the held-out run
+(`python -m fingraph.eval.failure_cards results/heldout`), each put in one bucket: the
+first thing that went wrong. Labels and a note per failure are in
+`results/heldout/error_labels.csv` (`make labels` rebuilds it from
+`fingraph/eval/error_labels.py`). **The labels are Claude's and have not yet been
+checked by a person.**
+
+| Bucket | A: single agent | B: graph | C: graph + verifier |
+|---|---|---|---|
+| Answer form (span boundaries, list vs phrase, sign, "(3,753)") | 23 | 22 | 22 |
+| Scale (incl. percent vs ratio) | 8 | 14 | 12 |
+| Planning (wrong approach, item or source) | 10 | 7 | 4 |
+| Table query (wrong cells) | 1 | 3 | 5 |
+| Retrieval miss | 1 | 1 | 1 |
+| Arithmetic (rounding) | 1 | 1 | 0 |
+| Pipeline (a bug in the graph's code) | 0 | 1 | 0 |
+| Verifier false reject | 0 | 0 | 0 |
+| Gold label looks wrong | 6 | 1 | 6 |
+
+What the failures say:
+- **Almost half the failures are answer form, not wrong content.** The right passage,
+  with a word too many or too few, or split into a list where the gold is one phrase.
+  Exact match is unforgiving here (these average F1 above 0.5); it hits all arms alike.
+- **The graph's extra failures are mostly scale.** B labels 14 of 50 failures with the
+  wrong unit against A's 8: the planner chooses the scale before it sees the text, and
+  the synthesizer sometimes overrides it ("billion" on years, "percent" on a dollar
+  amount).
+- **The verifier catches made-up numbers, not wrong-but-grounded answers.** None of
+  Arm C's sampled failures was a false reject; both sampled abstentions were right to
+  reject. But it passed a count of 7 labelled "billion" because the planner wrote the
+  constant 7 as its "calculation", and a "percent" scale because a "%" appears
+  elsewhere in the text. Wrong rows and wrong periods pass, since the numbers are real.
+- **About 1 in 12 sampled failures looks like a benchmark error.** 9 distinct gold
+  answers look wrong (13 of the 150 labels); each is in
+  [benchmark_issues.md](benchmark_issues.md) with its evidence. Scores are not changed.
+- **The official scorer reads "(3,753)" as wrong** against a gold of -3753, while
+  "-3,753" is right. Answers written the accounts way are marked wrong.
+- **A pipeline bug in Arm B/C:** a quoted "$1.9 million" parses to no number, so the
+  calculation that needed it fails. Arms are frozen, so it stays, and is reported here.
+
 ## Deviations from the project spec
 
 Recorded here so nobody has to find them in the diff.

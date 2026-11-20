@@ -1,0 +1,57 @@
+[
+  {
+    "name": "B: no verifier",
+    "retry_budget": null,
+    "strict": false,
+    "n": 500,
+    "answered": 500,
+    "coverage": 1.0,
+    "selective_accuracy": 0.692,
+    "em": 0.692,
+    "confident_wrong": 0.308
+  },
+  {
+    "name": "C: 0 retries",
+    "retry_budget": 0,
+    "strict": false,
+    "n": 500,
+    "answered": 460,
+    "coverage": 0.92,
+    "selective_accuracy": 0.7282608695652174,
+    "em": 0.67,
+    "confident_wrong": 0.25
+  },
+  {
+    "name": "C: 1 retry",
+    "retry_budget": 1,
+    "strict": false,
+    "n": 500,
+    "answered": 487,
+    "coverage": 0.974,
+    "selective_accuracy": 0.731006160164271,
+    "em": 0.712,
+    "confident_wrong": 0.262
+  },
+  {
+    "name": "C: 2 retries",
+    "retry_budget": 2,
+    "strict": false,
+    "n": 500,
+    "answered": 488,
+    "coverage": 0.976,
+    "selective_accuracy": 0.7315573770491803,
+    "em": 0.714,
+    "confident_wrong": 0.262
+  },
+  {
+    "name": "C: 0 retries, strict",
+    "retry_budget": 0,
+    "strict": true,
+    "n": 500,
+    "answered": 418,
+    "coverage": 0.836,
+    "selective_accuracy": 0.722488038277512,
+    "em": 0.604,
+    "confident_wrong": 0.232
+  }
+]

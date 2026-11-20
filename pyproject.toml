@@ -10,6 +10,7 @@ dependencies = [
     "langchain-postgres>=0.0.19",
     "langgraph>=1.2.24",
     "langgraph-checkpoint-postgres>=3.2.1",
+    "matplotlib>=3.11.2",
     "numpy>=2.5.5",
     "pandas>=3.1.1",
     "psycopg[binary]>=3.3.9",
@@ -45,6 +46,10 @@ extend-exclude = ["fingraph/eval/tatqa_official"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# A table of hand-written labels and notes; wrapping each note would not help reading it.
+"fingraph/eval/error_labels.py" = ["E501"]
 
 # CPU-only PyTorch (pulled in by sentence-transformers): the default Linux wheel brings
 # gigabytes of CUDA that a laptop and CI don't need.
