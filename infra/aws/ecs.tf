@@ -78,6 +78,7 @@ resource "aws_ecs_task_definition" "api" {
   cpu                      = "512"
   memory                   = "1024"
   execution_role_arn       = aws_iam_role.execution.arn
+  task_role_arn            = aws_iam_role.task.arn # bedrock.tf
 
   runtime_platform {
     operating_system_family = "LINUX"
@@ -98,6 +99,8 @@ resource "aws_ecs_task_definition" "api" {
         { name = "FINGRAPH_CONCURRENCY", value = "4" },
         # Set by CloudFront (see cloudfront.tf); the API keys rate limits on its address.
         { name = "CLIENT_IP_HEADER", value = "CloudFront-Viewer-Address" },
+        { name = "LLM_PROVIDER", value = var.llm_provider },
+        { name = "AWS_REGION", value = var.region },
       ]
       secrets = [
         { name = "ANTHROPIC_API_KEY", valueFrom = aws_secretsmanager_secret.anthropic.arn },

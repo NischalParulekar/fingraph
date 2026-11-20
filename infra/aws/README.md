@@ -43,6 +43,19 @@ and Redis runs beside the API in the same task.
    Confirm the AWS Budgets email when it arrives.
 5. `curl $(terraform output -raw api_url)/healthz`.
 
+**With Bedrock instead of the Anthropic API:** set `llm_provider = "bedrock"` in
+`terraform.tfvars`. The task role (`bedrock.tf`) then gets `bedrock:InvokeModel` on the
+global Claude Haiku 5.5 inference profile and on its model when reached through it, and
+nothing else. The API calls Bedrock with that role; there is no key.
+
+- `region` can stay `us-east-1` or be `ap-south-1`. Both reach Haiku 5.5 through the
+  global profile ([docs/bedrock.md](../../docs/bedrock.md)).
+- The first Bedrock call in an account subscribes it to the model through AWS
+  Marketplace. Make that call once with your own administrator profile before deploying;
+  the task role cannot subscribe.
+- `TF_VAR_anthropic_api_key` is still required by the variables, but is not used in
+  this mode.
+
 ## Tear down
 
 `terraform destroy` (or `make aws-down`). Nothing here keeps data worth saving: the

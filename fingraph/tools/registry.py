@@ -6,6 +6,8 @@ Both go through ContextTools, so neither arm has a better tool than the other.
 
 import json
 
+from langsmith import traceable
+
 from fingraph.data.tatqa import Example
 from fingraph.tools.calculator import CalculatorError, calculate, format_number
 from fingraph.tools.retriever import DEFAULT_K, ContextRetriever, Embedder
@@ -57,6 +59,10 @@ class ContextTools:
         self.calculations: list[dict] = []  # every successful calculate call, in order
 
     def execute(self, name: str, arguments: dict) -> ToolResult:
+        # A LangSmith tool run named after the tool when LANGSMITH_TRACING is on.
+        return _traced_execute(self, name, arguments, langsmith_extra={"name": name})
+
+    def _execute(self, name: str, arguments: dict) -> ToolResult:
         if name == "query_table":
             return self.table.query(arguments["sql"])
         if name == "retrieve_text":
@@ -80,3 +86,8 @@ class ContextTools:
 
     def close(self) -> None:
         self.table.close()
+
+
+@traceable(run_type="tool", process_inputs=lambda inputs: inputs["arguments"])
+def _traced_execute(tools: ContextTools, name: str, arguments: dict) -> ToolResult:
+    return tools._execute(name, arguments)

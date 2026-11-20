@@ -6,7 +6,7 @@
 # make retrieval  retrieval hit/recall, context vs corpus mode (no model calls)
 # make test, make lint
 
-.PHONY: install data splits db stack aws-up aws-down retrieval test lint eval-dev-a eval-heldout eval report plots labels demo ui
+.PHONY: install data splits db stack aws-up aws-down retrieval test lint eval-dev-a eval-heldout bedrock-dev bedrock-report eval report plots labels demo ui
 
 install:
 	uv sync --locked --extra torch --extra onnx
@@ -46,6 +46,18 @@ eval-heldout:
 	uv run python -m fingraph.eval.runner --arm single_agent --split heldout --max-cost 0.45
 	uv run python -m fingraph.eval.runner --arm graph --split heldout --max-cost 0.50
 	uv run python -m fingraph.eval.runner --arm graph_verifier --split heldout --max-cost 0.60
+
+# Paid: Arm C on dev through the direct API, then through Bedrock, one after the other
+# (side by side they would share prompt-cache hits). Needs ANTHROPIC_API_KEY in .env and
+# an AWS profile with Bedrock access (docs/bedrock.md). Dev only, never held-out.
+bedrock-dev:
+	LLM_PROVIDER=anthropic uv run python -m fingraph.eval.runner --arm graph_verifier --split dev --out bedrock-dev --tag api --max-cost 0.40
+	LLM_PROVIDER=bedrock uv run python -m fingraph.eval.runner --arm graph_verifier --split dev --out bedrock-dev --tag bedrock --max-cost 0.40
+	$(MAKE) bedrock-report
+
+# Free: the API vs Bedrock table, from the committed run files.
+bedrock-report:
+	uv run python -m fingraph.eval.bedrock_compare results/bedrock-dev
 
 # Free: the README's held-out table and hypothesis tests, from the committed run files.
 eval: report

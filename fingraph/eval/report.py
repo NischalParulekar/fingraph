@@ -19,7 +19,7 @@ from pathlib import Path
 
 from fingraph.eval.runner import summarize
 from fingraph.eval.stats import paired
-from fingraph.llm import CACHE_WRITE, PRICES
+from fingraph.llm import BEDROCK_PRICES, BEDROCK_PRICES_CHECKED, CACHE_READ, CACHE_WRITE, PRICES
 
 ARMS = {"A": "single_agent", "B": "graph", "C": "graph_verifier"}
 LABELS = {"A": "A: single agent", "B": "B: graph", "C": "C: graph + verifier"}
@@ -37,7 +37,9 @@ def load(directory: Path) -> dict[str, dict[str, dict]]:
     return runs
 
 
-def cost_views(records: list[dict], one_off_prompts: bool) -> dict:
+def cost_views(
+    records: list[dict], one_off_prompts: bool, price: tuple[float, float] | None = None
+) -> dict:
     """Cost per 1k questions three ways, from the token counts in the traces.
 
     - billed: as METRICS.md defines it (cache reads and writes at their own rates);
@@ -47,6 +49,8 @@ def cost_views(records: list[dict], one_off_prompts: bool) -> dict:
       the same time (B and C ran in parallel). Arm A's reads come from its own loop
       re-sending its conversation, so for A this equals billed;
     - no_cache: every input token at the plain input price, as with caching switched off.
+
+    `price` is (input, output) USD per million tokens; by default the direct API's.
     """
     totals = {"in": 0, "out": 0, "read": 0, "write": 0}
     for r in records:
@@ -57,7 +61,7 @@ def cost_views(records: list[dict], one_off_prompts: bool) -> dict:
                 totals["read"] += step["cache_read_tokens"]
                 totals["write"] += step["cache_write_tokens"]
     model = records[0].get("model") or "claude-haiku-5-5"
-    price_in, price_out = PRICES[model]
+    price_in, price_out = price or PRICES[model]
     out = totals["out"] * price_out
     per_1k = 1000 / len(records) / 1_000_000
     standalone = (totals["in"] + (totals["read"] + totals["write"]) * CACHE_WRITE) * price_in
@@ -69,6 +73,29 @@ def cost_views(records: list[dict], one_off_prompts: bool) -> dict:
         "no_cache": (no_cache + out) * per_1k,
         "cache_read_tokens_per_question": totals["read"] / len(records),
     }
+
+
+def price_tables() -> str:
+    """The direct API and Bedrock prices the cost figures use, as Markdown."""
+    lines = [
+        "Prices, USD per million tokens (prompts up to 100K tokens):",
+        "",
+        "| Where | Model or profile | Input | Output | Cache write (5 min) | Cache read |",
+        "|---|---|---|---|---|---|",
+    ]
+    rows = [("Anthropic API", m, p) for m, p in PRICES.items()]
+    rows += [("Bedrock", m, p) for m, p in BEDROCK_PRICES.items()]
+    for where, model, (price_in, price_out) in rows:
+        lines.append(
+            f"| {where} | `{model}` | ${price_in:g} | ${price_out:g} "
+            f"| ${price_in * CACHE_WRITE:g} | ${price_in * CACHE_READ:g} |"
+        )
+    lines += [
+        "",
+        f"Bedrock prices read from https://aws.amazon.com/bedrock/pricing/ on "
+        f"{BEDROCK_PRICES_CHECKED}.",
+    ]
+    return "\n".join(lines) + "\n"
 
 
 def pct(value: float | None) -> str:

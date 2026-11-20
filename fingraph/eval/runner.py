@@ -3,7 +3,8 @@
     python -m fingraph.eval.runner --arm single_agent --split dev --max-cost 0.20
     python -m fingraph.eval.runner --arm single_agent --split dev --limit 10 --max-cost 0.05
 
-Writes to results/<split>[-first<limit>]/ (file names get -<tag> with --tag):
+Writes to results/<split>[-first<limit>]/, or results/<out>/ with --out (file names get
+-<tag> with --tag):
 - <arm>.predictions.jsonl  one line per question: the answer, its scores and the full
                            trace (every model call and tool call), so anyone can re-score
                            it or audit a single answer;
@@ -21,6 +22,8 @@ from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import asdict
 from pathlib import Path
+
+from langsmith import traceable
 
 from fingraph.arms.base import Arm, Prediction
 from fingraph.data.splits import load_split
@@ -124,12 +127,14 @@ def run(arm: Arm, examples: list[Example], max_cost: float, out: Path, tag: str 
     out.mkdir(parents=True, exist_ok=True)
     stem = f"{arm.name}-{tag}" if tag else arm.name
     records, spent = [], 0.0
+    # One LangSmith trace per question when LANGSMITH_TRACING is on; a no-op otherwise.
+    answer = traceable(run_type="chain", name=arm.name)(arm.answer)
     with open(out / f"{stem}.predictions.jsonl", "w", encoding="utf-8", newline="\n") as f:
         for i, example in enumerate(examples):
             if spent >= max_cost:
                 print(f"stopped at --max-cost ${max_cost} after {i} questions", file=sys.stderr)
                 break
-            r = record(example, arm.answer(example))
+            r = record(example, answer(example, langsmith_extra={"metadata": {"uid": example.uid}}))
             spent += r["cost_usd"]
             records.append(r)
             f.write(json.dumps(r, ensure_ascii=False, default=str) + "\n")
@@ -164,13 +169,16 @@ def main() -> None:
     parser.add_argument("--limit", type=int, help="only the first N questions of the split")
     parser.add_argument("--max-cost", type=float, required=True, help="USD; stop once spent")
     parser.add_argument("--tag", default="", help="version label added to the output names")
+    parser.add_argument("--out", help="results subdirectory, instead of one named after the split")
     args = parser.parse_args()
 
     examples = load_split(args.split)
     name = args.split
     if args.limit:
         examples, name = examples[: args.limit], f"{args.split}-first{args.limit}"
-    summary = run(ARMS[args.arm](), examples, args.max_cost, RESULTS_DIR / name, args.tag)
+    summary = run(
+        ARMS[args.arm](), examples, args.max_cost, RESULTS_DIR / (args.out or name), args.tag
+    )
     print(json.dumps(summary["overall"], indent=2))
 
 
