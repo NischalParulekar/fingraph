@@ -20,9 +20,18 @@ dependencies = [
     "python-dotenv>=1.2.4",
     "redis>=8.1.0",
     "scipy>=1.18.1",
+    "uvicorn>=0.54.0",
+]
+
+[project.optional-dependencies]
+torch = [
     "sentence-transformers>=6.3.0",
     "torch>=2.15.0",
-    "uvicorn>=0.54.0",
+]
+onnx = [
+    "huggingface-hub>=1.33.0",
+    "onnxruntime>=1.32.0",
+    "tokenizers>=0.23.3",
 ]
 
 [dependency-groups]
@@ -57,8 +66,8 @@ select = ["E", "F", "I", "B", "UP"]
 # A table of hand-written labels and notes; wrapping each note would not help reading it.
 "fingraph/eval/error_labels.py" = ["E501"]
 
-# CPU-only PyTorch (pulled in by sentence-transformers): the default Linux wheel brings
-# gigabytes of CUDA that a laptop and CI don't need.
+# CPU-only PyTorch (the torch extra, via sentence-transformers): the default Linux wheel
+# brings gigabytes of CUDA that a laptop and CI do not need.
 [tool.uv.sources]
 torch = { index = "pytorch-cpu" }
 

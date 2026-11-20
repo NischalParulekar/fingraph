@@ -252,6 +252,25 @@ latency, model calls, tokens and cost, verifier verdicts and reviews; Grafana
 (`localhost:3001`) has a dashboard for them. The cache, rate limit and metrics follow
 tableqa's service.
 
+## Deployment
+
+**Render (the public demo).** `render.yaml` is a Blueprint: a free Docker web service, a
+free Key Value (Redis) and a free Postgres for Arm C's checkpoints. The free web service
+has 512 MB, so the image serves the embedder from an ONNX port of bge-small with
+onnxruntime and no PyTorch (`FINGRAPH_EMBEDDER=onnx`; image 1.4 GB instead of 2.9 GB).
+Measured in the image: 107 MB for the app, 311 MB with the model loaded, 382 MB at peak
+with four questions retrieving and querying at once; Render runs two at a time.
+
+**The live demo's retriever is not bit-identical to the evaluated one.** Every reported
+number used the PyTorch embedder. The ONNX port is quantized; on the 901 official-dev
+questions with gold paragraphs it ranks the same top 3 paragraphs as PyTorch on 897 and
+the same top paragraph on 900 (scores within 0.0009).
+
+Free-tier limits: the service sleeps after 15 minutes idle and takes about a minute to
+wake; the free Key Value keeps nothing across restarts (the cache and the day's spend
+counter reset), so the Anthropic Console's workspace spend limit is the real ceiling;
+the free Postgres expires after 30 days, after which the API turns Arm C off by itself.
+
 ## Running it
 
 ```

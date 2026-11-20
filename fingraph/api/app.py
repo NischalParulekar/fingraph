@@ -45,8 +45,9 @@ from fingraph.api.metrics import Metrics
 from fingraph.api.store import Store, answer_key
 from fingraph.data.tatqa import Example
 from fingraph.eval.offline_verify import check, inputs_from_trace
-from fingraph.eval.scorer import SCALES
 from fingraph.llm import Spend
+from fingraph.scales import SCALES
+from fingraph.tools.retriever import backend
 
 log = logging.getLogger("fingraph.api")
 
@@ -245,6 +246,7 @@ def create_app(
             "status": "ok" if redis_ok else "degraded",
             "redis": redis_ok,
             "postgres": state.checkpointer is not None,
+            "embedder": backend(),
             "arms": sorted(state.arms),
         }
         return JSONResponse(body, status_code=200 if redis_ok else 503)
