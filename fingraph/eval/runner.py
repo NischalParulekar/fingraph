@@ -40,7 +40,16 @@ def _single_agent() -> Arm:
     return SingleAgent()
 
 
-ARMS: dict[str, Callable[[], Arm]] = {"single_agent": _single_agent}
+def _graph() -> Arm:
+    from dotenv import load_dotenv
+
+    from fingraph.arms.graph import GraphArm
+
+    load_dotenv()
+    return GraphArm()
+
+
+ARMS: dict[str, Callable[[], Arm]] = {"single_agent": _single_agent, "graph": _graph}
 
 
 def record(example: Example, prediction: Prediction) -> dict:
