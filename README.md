@@ -271,6 +271,12 @@ wake; the free Key Value keeps nothing across restarts (the cache and the day's 
 counter reset), so the Anthropic Console's workspace spend limit is the real ceiling;
 the free Postgres expires after 30 days, after which the API turns Arm C off by itself.
 
+**AWS (temporary).** `infra/aws/` is minimal Terraform for ECS Fargate behind a load
+balancer and CloudFront, RDS PostgreSQL 16, Secrets Manager and an AWS Budgets alarm
+applied first. It costs about $60 a month left running (about $2 a day), so it is meant
+to be up for a few days to record the demo and then destroyed; see
+[infra/aws/README.md](infra/aws/README.md) for the estimate, the steps and the limits.
+
 ## Running it
 
 ```

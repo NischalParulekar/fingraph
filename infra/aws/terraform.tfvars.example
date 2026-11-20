@@ -1,0 +1,4 @@
+# Copy to terraform.tfvars (git-ignored) and fill in. The Anthropic key never goes in a
+# file: export TF_VAR_anthropic_api_key before running Terraform.
+alert_email        = "you@example.com"
+monthly_budget_usd = 10

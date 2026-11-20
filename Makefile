@@ -6,7 +6,7 @@
 # make retrieval  retrieval hit/recall, context vs corpus mode (no model calls)
 # make test, make lint
 
-.PHONY: install data splits db stack retrieval test lint eval-dev-a eval-heldout report plots labels
+.PHONY: install data splits db stack aws-up aws-down retrieval test lint eval-dev-a eval-heldout report plots labels
 
 install:
 	uv sync --locked --extra torch --extra onnx
@@ -57,3 +57,11 @@ plots:
 
 labels:
 	uv run python -m fingraph.eval.error_labels
+
+# Paid, on your AWS account: see infra/aws/README.md (about $2 a day while it runs).
+# Needs terraform.tfvars and TF_VAR_anthropic_api_key; the budget alarm goes first.
+aws-up:
+	bash infra/aws/deploy.sh
+
+aws-down:
+	cd infra/aws && terraform destroy

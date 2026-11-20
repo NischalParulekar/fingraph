@@ -128,3 +128,17 @@ def test_rate_limit_and_spend_cap():
     with make_client(A_TURNS, daily_spend_cap_usd=0.0) as c:
         capped = c.post("/ask", json={"uid": EXAMPLE.uid, "arm": "single_agent"})
         assert capped.status_code == 503
+
+
+def test_behind_cloudfront_the_rate_limit_keys_on_the_address_not_the_port():
+    settings = {"rate_capacity": 5, "fresh_cost": 5, "rate_refill_per_s": 0.001}
+    with make_client(A_TURNS, client_ip_header="CloudFront-Viewer-Address", **settings) as c:
+        first = {"uid": EXAMPLE.uid, "arm": "single_agent"}
+        headers = {"CloudFront-Viewer-Address": "203.0.113.9:51234"}
+        assert c.post("/ask", json=first, headers=headers).status_code == 200
+        # Same viewer, new connection port: still the same client, so limited.
+        other = {**first, "question": "Something else?"}
+        again = c.post(
+            "/ask", json=other, headers={"CloudFront-Viewer-Address": "203.0.113.9:60001"}
+        )
+        assert again.status_code == 429
