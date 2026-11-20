@@ -11,6 +11,19 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # The Postgres tests (checkpointer, pgvector) run against this service.
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.1-pg16
+        env:
+          POSTGRES_USER: fingraph
+          POSTGRES_PASSWORD: fingraph
+          POSTGRES_DB: fingraph
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U fingraph -d fingraph"
+          --health-interval 2s --health-timeout 3s --health-retries 30
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
