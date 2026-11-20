@@ -2,10 +2,11 @@
 # make data      download TAT-QA at a pinned commit into data/ (not redistributed)
 # make splits    rebuild the frozen question-ID splits (they are committed; this checks them)
 # make db        start Postgres 16 + pgvector (docker compose), then index the paragraphs
+# make stack     the whole local stack: API, Postgres, Redis, Prometheus, Grafana
 # make retrieval  retrieval hit/recall, context vs corpus mode (no model calls)
 # make test, make lint
 
-.PHONY: install data splits db retrieval test lint eval-dev-a eval-heldout report plots labels
+.PHONY: install data splits db stack retrieval test lint eval-dev-a eval-heldout report plots labels
 
 install:
 	uv sync --locked
@@ -17,8 +18,11 @@ splits:
 	uv run python -m fingraph.data.splits
 
 db:
-	docker compose up -d --wait
+	docker compose up -d --wait postgres
 	uv run python -m fingraph.tools.pgvector_store index
+
+stack:
+	docker compose up -d --build --wait
 
 retrieval:
 	uv run python -m fingraph.eval.retrieval --split dev-official

@@ -6,6 +6,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "anthropic>=2.11.0",
     "duckdb>=2.0.0",
+    "fastapi>=0.165.0",
     "langchain-core>=1.8.4",
     "langchain-postgres>=0.0.19",
     "langgraph>=1.2.24",
@@ -13,16 +14,21 @@ dependencies = [
     "matplotlib>=3.11.2",
     "numpy>=2.5.5",
     "pandas>=3.1.1",
+    "prometheus-client>=0.26.0",
     "psycopg[binary]>=3.3.9",
     "pydantic>=2.14.4",
     "python-dotenv>=1.2.4",
+    "redis>=8.1.0",
     "scipy>=1.18.1",
     "sentence-transformers>=6.3.0",
     "torch>=2.15.0",
+    "uvicorn>=0.54.0",
 ]
 
 [dependency-groups]
 dev = [
+    "fakeredis[lua]>=2.40.0",
+    "httpx>=0.28.1",
     "hypothesis>=6.170.16",
     "pytest>=9.2.0",
     "ruff>=0.17.6",

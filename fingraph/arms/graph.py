@@ -629,15 +629,27 @@ class GraphArm:
     def answer(self, example: Example) -> Prediction:
         start = time.perf_counter()
         spend = Spend()
+        final = self.run(example, {"question": example.question, "evidence": []}, spend)
+        return self.prediction(final, spend, time.perf_counter() - start)
+
+    def run(self, example: Example, payload, spend: Spend, thread_id: str | None = None) -> dict:
+        """Invoke the graph once: a fresh input, or a Command(resume=...) for a thread
+        paused at human_review. With a thread_id the run is checkpointed under it.
+        A run that pauses returns its state with the interrupt under "__interrupt__"."""
         tools = ContextTools(example, self._embed)
+        config = {"configurable": {"thread_id": thread_id}} if thread_id else None
         try:
-            final = self._graph.invoke(
-                {"question": example.question, "evidence": []},
-                context=self.context(example, tools, spend),
-            )
+            return self._graph.invoke(payload, config, context=self.context(example, tools, spend))
         finally:
             tools.close()
-        return self.prediction(final, spend, time.perf_counter() - start)
+
+    def pending(self, thread_id: str) -> dict | None:
+        """The interrupt payload of a thread paused at human_review, or None."""
+        state = self._graph.get_state({"configurable": {"thread_id": thread_id}})
+        for task in state.tasks:
+            for item in task.interrupts:
+                return item.value
+        return None
 
     def prediction(self, final: dict, spend: Spend, seconds: float) -> Prediction:
         # A planner or synthesizer failure, or an abstention after review, is no answer.

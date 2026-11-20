@@ -219,12 +219,40 @@ pgvector in context mode returns the same top-3 ranking as the in-memory retriev
 all 901 questions. Context mode is easy partly because many reports have only 2-3
 paragraphs.
 
+## The API
+
+`fingraph/api/app.py` (FastAPI) serves all three arms over the 150 dev-subset questions;
+`make stack` runs it with Postgres, Redis, Prometheus and Grafana in Docker Compose.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /ask` `{uid, arm, question?}` | Answers a question about one report with arm `single_agent`, `graph` or `graph_verifier`. Returns the answer and scale, the evidence (table cells and paragraphs), the calculations, the verifier's report (Arm C's own, or the same verifier run afterwards for A and B), cost and latency. |
+| `GET /runs/{thread_id}` | A run's result, or its pending review. |
+| `POST /runs/{thread_id}/resume` `{action, answer?, scale?}` | A reviewer's decision on a paused Arm C run: `approve`, `edit` (with the corrected answer) or `reject` (abstain). |
+| `GET /questions`, `GET /reports/{uid}` | The questions on offer, and the table and paragraphs one is about. |
+| `GET /healthz`, `GET /metrics` | Health (Redis, Postgres, arms) and Prometheus metrics. |
+
+**Human in the loop.** In API mode, an Arm C answer that still fails the evidence check
+after its retries pauses at `human_review` with LangGraph `interrupt()`. Its state is
+checkpointed in Postgres under the run's `thread_id`, so `/ask` returns
+`pending_review` and any API process can finish it later with
+`Command(resume=...)`. In eval mode the same node abstains instead, so runs stay
+automatic.
+
+**Serving.** Finished answers are cached in Redis by (arm, report, normalised question);
+each client address has a token bucket; model spend is capped per UTC day
+(`DAILY_SPEND_CAP_USD`, 0.50 by default). Prometheus counts questions by arm and outcome,
+latency, model calls, tokens and cost, verifier verdicts and reviews; Grafana
+(`localhost:3001`) has a dashboard for them. The cache, rate limit and metrics follow
+tableqa's service.
+
 ## Running it
 
 ```
 make install    # Python 3.12 + locked dependencies (uv)
 make data       # download TAT-QA (pinned commit) into data/ - not redistributed here
 make db         # Postgres 16 + pgvector in Docker, and index the paragraphs
+make stack      # the API with Postgres, Redis, Prometheus and Grafana (needs .env)
 make test       # the Postgres tests are skipped if the database is not running
 ```
 
