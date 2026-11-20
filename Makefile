@@ -5,7 +5,7 @@
 # make retrieval  retrieval hit/recall, context vs corpus mode (no model calls)
 # make test, make lint
 
-.PHONY: install data splits db retrieval test lint eval-dev-a
+.PHONY: install data splits db retrieval test lint eval-dev-a eval-heldout report
 
 install:
 	uv sync --locked
@@ -34,3 +34,15 @@ lint:
 # measured yet, so the run is capped and stops at --max-cost.
 eval-dev-a:
 	uv run python -m fingraph.eval.runner --arm single_agent --split dev --max-cost 0.50
+
+# Paid, and done once (2026-11-20): every arm on the 500 held-out questions. Do not rerun
+# without a note in the README. Run the arms one after another: run side by side, B and
+# C share prompt-cache hits, which lowers C's billed cost.
+eval-heldout:
+	uv run python -m fingraph.eval.runner --arm single_agent --split heldout --max-cost 0.45
+	uv run python -m fingraph.eval.runner --arm graph --split heldout --max-cost 0.50
+	uv run python -m fingraph.eval.runner --arm graph_verifier --split heldout --max-cost 0.60
+
+# Free: the README's held-out table and hypothesis tests, from the committed run files.
+report:
+	uv run python -m fingraph.eval.report results/heldout

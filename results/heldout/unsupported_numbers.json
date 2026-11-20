@@ -1,0 +1,40 @@
+{
+"single_agent": 
+{
+  "answered": 500,
+  "unsupported_number": 4,
+  "unsupported_number_rate": 0.008,
+  "correct_pass": 355,
+  "correct_fail": 3,
+  "wrong_pass": 125,
+  "wrong_fail": 17,
+  "false_reject_rate": 0.008379888268156424,
+  "catch_rate": 0.11971830985915492
+}
+,
+"graph": 
+{
+  "answered": 500,
+  "unsupported_number": 21,
+  "unsupported_number_rate": 0.042,
+  "correct_pass": 331,
+  "correct_fail": 15,
+  "wrong_pass": 128,
+  "wrong_fail": 26,
+  "false_reject_rate": 0.04335260115606936,
+  "catch_rate": 0.16883116883116883
+}
+,
+"graph_verifier": 
+{
+  "answered": 488,
+  "unsupported_number": 0,
+  "unsupported_number_rate": 0.0,
+  "correct_pass": 357,
+  "correct_fail": 0,
+  "wrong_pass": 131,
+  "wrong_fail": 0,
+  "false_reject_rate": 0.0,
+  "catch_rate": 0.0
+}
+}
