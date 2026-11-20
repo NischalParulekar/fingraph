@@ -337,8 +337,11 @@ paid plan.
 
 ## Deployment
 
-**Render (the public demo).** `render.yaml` is a Blueprint: a free Docker web service, a
-free Key Value (Redis) and a free Postgres for Arm C's checkpoints. The free web service
+**Render (the public demo).** `render.yaml` is a Blueprint: a free Docker web service and
+a free Postgres for Arm C's checkpoints. Render allows one free Key Value (Redis) instance
+per workspace, so the service shares tableqa's: `REDIS_URL` is set by hand to its
+internal connection string, and the projects' keys cannot collide (prefixes `fingraph:`
+and `tableqa:`). The free web service
 has 512 MB, so the image serves the embedder from an ONNX port of bge-small with
 onnxruntime and no PyTorch (`FINGRAPH_EMBEDDER=onnx`; image 1.4 GB instead of 2.9 GB).
 Measured in the image: 107 MB for the app, 311 MB with the model loaded, 382 MB at peak
