@@ -401,6 +401,14 @@ results/           every run's config, predictions with traces, and summaries
 
 TAT-QA: Zhu et al., *TAT-QA: A Question Answering Benchmark on a Hybrid of Tabular and
 Textual Content in Finance*, ACL 2021 ([repo](https://github.com/NExTplusplus/TAT-QA)).
-The paper restricts the data to non-commercial research use, so this repo treats it that
-way and does not include it: `make data` downloads it. The official evaluation scripts
-are MIT-licensed and vendored with their licence.
+The Hugging Face card lists it under CC BY 4.0 and the paper restricts it to
+non-commercial research use, so this repo treats it that way. The dataset files are not
+included: `make data` downloads them at a pinned commit.
+
+**The run files do quote it.** So that every result here can be checked and re-scored,
+`results/` keeps each run's predictions with their traces: the question, the gold answer,
+and the table cells and paragraphs the arm read. That covers 650 questions (about 4% of
+TAT-QA) from 366 reports, and `frontend/public/demo.json` holds 14 reports in full for the
+recorded demo. These excerpts are attributed to TAT-QA and are for non-commercial
+research use, under the dataset's own terms. The official evaluation scripts are
+MIT-licensed and vendored with their licence.
