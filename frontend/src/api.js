@@ -47,7 +47,10 @@ async function demo() {
 export async function getArms() {
   if (RECORDED) return (await demo()).arms;
   const arms = await request('/arms');
-  return arms.map((a) => ({ arm: a.arm, name: a.name.replace(/^[ABC]: /, ''), short: SHORT[a.arm] }));
+  return arms.map((a) => {
+    const name = a.name.replace(/^[ABC]: /, '');
+    return { arm: a.arm, name: name[0].toUpperCase() + name.slice(1), short: SHORT[a.arm] };
+  });
 }
 
 export async function getQuestions() {

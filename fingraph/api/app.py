@@ -397,6 +397,8 @@ def create_app(
             **result,
             "review": {**decision, "reviewed_draft": run["review"]["answer"]},
             "cost_usd": run["cost_usd"] + spend.cost_usd,
+            # The whole run: the calls before the pause and any after it.
+            "llm_calls": run["llm_calls"] + spend.calls,
             "latency_ms": run["latency_ms"],
         }
         await state.store.put_run(thread_id, done)
