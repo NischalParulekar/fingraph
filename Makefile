@@ -1,4 +1,4 @@
-# make install   Python 3.12 and the locked dependencies
+# make install   Python 3.12 and the locked dependencies, both embedders (torch, onnx)
 # make data      download TAT-QA at a pinned commit into data/ (not redistributed)
 # make splits    rebuild the frozen question-ID splits (they are committed; this checks them)
 # make db        start Postgres 16 + pgvector (docker compose), then index the paragraphs
@@ -9,7 +9,7 @@
 .PHONY: install data splits db stack retrieval test lint eval-dev-a eval-heldout report plots labels
 
 install:
-	uv sync --locked
+	uv sync --locked --extra torch --extra onnx
 
 data:
 	uv run python -m fingraph.data.tatqa download

@@ -50,8 +50,8 @@ from pydantic import BaseModel, ValidationError
 
 from fingraph.arms.base import ANSWER_RULES, FINAL_ANSWER_TOOL, Prediction
 from fingraph.data.tatqa import Example
-from fingraph.eval.scorer import SCALES
 from fingraph.llm import LLM, Spend
+from fingraph.scales import SCALES
 from fingraph.tools.numbers import parse_financial
 from fingraph.tools.registry import TOOL_DEFINITIONS, ContextTools
 from fingraph.tools.retriever import DEFAULT_K, EMBEDDING_MODEL, EMBEDDING_REVISION, Embedder

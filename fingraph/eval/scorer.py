@@ -13,7 +13,7 @@ if str(_OFFICIAL) not in sys.path:
 
 from tatqa_metric import TaTQAEmAndF1  # noqa: E402
 
-SCALES = ("", "thousand", "million", "billion", "percent")
+from fingraph.scales import SCALES  # noqa: E402, F401 - re-exported for existing callers
 
 
 def score(gold: dict, answer: list[str] | None, scale: str) -> tuple[float, float]:

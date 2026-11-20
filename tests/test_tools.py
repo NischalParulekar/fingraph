@@ -154,3 +154,15 @@ def test_retriever_ranks_paragraphs_and_reports_their_numbers():
     assert hits[0][0].order == 2
     assert len(hits) == 2
     assert json.loads(retriever.search_text("employees", k=1))[0]["paragraph"] == 3
+
+
+def test_embedder_backend_is_chosen_by_environment(monkeypatch):
+    from fingraph.tools.retriever import backend
+
+    monkeypatch.delenv("FINGRAPH_EMBEDDER", raising=False)
+    assert backend() == "torch"  # what every reported result used
+    monkeypatch.setenv("FINGRAPH_EMBEDDER", "onnx")
+    assert backend() == "onnx"
+    monkeypatch.setenv("FINGRAPH_EMBEDDER", "gpu")
+    with pytest.raises(ValueError):
+        backend()

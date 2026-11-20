@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Protocol
 
 from fingraph.data.tatqa import Example
-from fingraph.eval.scorer import SCALES
+from fingraph.scales import SCALES
 
 
 @dataclass

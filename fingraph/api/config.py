@@ -49,4 +49,5 @@ class Settings:
             daily_spend_cap_usd=float(env("DAILY_SPEND_CAP_USD", cls.daily_spend_cap_usd)),
             rate_capacity=float(env("RATE_CAPACITY", cls.rate_capacity)),
             rate_refill_per_s=float(env("RATE_REFILL_PER_S", cls.rate_refill_per_s)),
+            concurrency=int(env("FINGRAPH_CONCURRENCY", cls.concurrency)),
         )
