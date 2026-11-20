@@ -197,8 +197,8 @@ export default function Answer({ arm, state, gold, onDecide }) {
         {[
           `${run.llm_calls ?? 0} model calls`,
           `$${(run.cost_usd ?? 0).toFixed(5)}`,
-          `${((run.latency_ms ?? run.arm_latency_ms ?? 0) / 1000).toFixed(1)} s`,
-          run.cached && 'from the cache',
+          `${((run.latency_ms ?? run.arm_latency_ms ?? 0) / 1000).toFixed(1)} s${run.cached ? ' when first answered' : ''}`,
+          run.cached && 'now from the cache',
           run.recorded && 'recorded run',
         ]
           .filter(Boolean)

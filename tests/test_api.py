@@ -96,6 +96,7 @@ def test_unsupported_answer_pauses_for_review_and_resumes_with_an_edit(client):
     ).json()
     assert done["status"] == "done" and done["answer"] == ["21.55"]
     assert done["review"]["action"] == "edit" and done["review"]["reviewed_draft"] == ["99"]
+    assert done["llm_calls"] == pending["llm_calls"] == 2  # planner + synthesizer, not 0
     assert client.get(f"/runs/{thread}").json()["status"] == "done"
     assert client.post(f"/runs/{thread}/resume", json={"action": "approve"}).status_code == 409
     assert 'fingraph_reviews_total{action="edit"} 1.0' in client.get("/metrics").text
