@@ -33,6 +33,7 @@ from pydantic import BaseModel, ValidationError
 
 from fingraph.arms.base import ANSWER_RULES, FINAL_ANSWER_TOOL, Prediction
 from fingraph.data.tatqa import Example
+from fingraph.eval.scorer import SCALES
 from fingraph.llm import LLM, Spend
 from fingraph.tools.numbers import parse_financial
 from fingraph.tools.registry import TOOL_DEFINITIONS, ContextTools
@@ -57,6 +58,7 @@ class Plan(BaseModel):
     table_cells: list[TableCell]
     text_lookups: list[TextLookup]
     expression: str
+    scale: str
 
 
 class Finding(BaseModel):
@@ -119,6 +121,11 @@ SUBMIT_PLAN_TOOL = _strict_tool(
                 "description": 'Arithmetic over the names, e.g. "(a - b) / b * 100"; '
                 '"" if no calculation is needed.',
             },
+            "scale": {
+                "type": "string",
+                "enum": list(SCALES),
+                "description": "The unit of the final answer, by the answer rules.",
+            },
         }
     ),
 )
@@ -166,6 +173,8 @@ add a lookup unless the table alone clearly answers the question.
 names using only + - * / and parentheses, such as "(rev_2019 - rev_2018) / rev_2018 * \
 100" for a percentage change; "" if nothing has to be calculated. Every name in it \
 must be a table cell or a text lookup whose quote is a number.
+- scale: the unit the final answer will be in, by the rules below. You are the only \
+step that sees the table's headers, so the later steps rely on you for it.
 
 {answer_rules}"""
 
@@ -182,6 +191,10 @@ You write the final answer to a question about a company's financial report, usi
 only the evidence and the calculation result you are given. Do not calculate anything \
 yourself: if the answer is a calculated number, it is the calculation result. Give the \
 answer with final_answer.
+
+The planner, which saw the table's headers and units, gives a planned scale. Use it \
+unless the evidence plainly says otherwise (for example, the answer is copied from a \
+paragraph, which takes "").
 
 {ANSWER_RULES}"""
 
@@ -356,6 +369,7 @@ def synthesizer(state: State, runtime: Runtime[Context]) -> dict:
         f"Question: {state['question']}\n\nEvidence:\n"
         + ("\n".join(lines) or "(none)")
         + f"\n\nCalculation: {calc_text}"
+        + f"\n\nPlanned scale: {json.dumps(state['plan']['scale'])}"
     )
     raw = _ask(runtime, "synthesizer", SYNTHESIZER_PROMPT, content, FINAL_ANSWER_TOOL)
     if raw is None:
