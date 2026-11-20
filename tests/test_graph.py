@@ -54,7 +54,10 @@ def test_table_question_runs_planner_table_calc_and_synthesizer():
     assert state["calculation"]["result"] == "21.546961326"
 
     # The planner saw the whole table; the synthesizer saw the evidence and the result.
-    assert '"Wireless"' in client.requests[0]["messages"][0]["content"]
+    planner_input = client.requests[0]["messages"][0]["content"]
+    assert 'row 2 | c0: "Wireless" | c1: "1,320" | c2: "1,086" | c3: "22"' in planner_input
+    assert 'row 0 | c0: "(In millions)" | c1: "Years ended December 31" | c2: ""' in planner_input
+    assert "Paragraph 1: Revenue grew." in planner_input  # the top paragraphs, up front
     synth_input = client.requests[1]["messages"][0]["content"]
     assert "table row 2, column c1" in synth_input and "= 21.546961326" in synth_input
     assert 'Planned scale: "percent"' in synth_input
