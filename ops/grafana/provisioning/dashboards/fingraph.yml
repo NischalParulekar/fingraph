@@ -1,0 +1,6 @@
+apiVersion: 1
+providers:
+  - name: FinGraph
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards
