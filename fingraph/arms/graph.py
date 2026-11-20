@@ -156,19 +156,21 @@ SUBMIT_FINDINGS_TOOL = _strict_tool(
 
 PLANNER_PROMPT = """\
 You plan how to answer a question about one company's financial report. The report has \
-a table, shown to you in full, and a few paragraphs of text, which you cannot see. \
-Other steps carry out your plan: they read the table cells you name, search the text \
-for what you ask, and do the arithmetic you write. You do not answer the question \
-yourself.
+a table, shown to you in full, one line per row, and a few paragraphs of text, of which \
+you are shown the ones that best match the question. Other steps carry out your plan: \
+they read the table cells you name, quote the text you ask for, and do the arithmetic \
+you write. You do not answer the question yourself.
 
 Write the plan with submit_plan:
 - table_cells: every table cell the answer needs, each with a short snake_case name, \
-its `row` value and its column number J (for column cJ). Read the header rows to pick \
-the right period and item.
-- text_lookups: anything the answer needs from the text (a reason, a description, a \
-figure the table does not have, or the answer itself when it is a phrase). Give each a \
-name, a search query, and what exactly to quote. Many answers are only in the text, so \
-add a lookup unless the table alone clearly answers the question.
+its row number (the number after "row") and its column number J (for "cJ"). Read the \
+header rows to pick the right period and item, and check that the cell you name is \
+not empty.
+- text_lookups: anything the answer needs from the paragraphs: a reason, a \
+description, a figure the table does not have, or the answer itself when it is a \
+phrase. Give each a name, a search query, and what exactly to quote. If a paragraph \
+answers the question, take the answer from it rather than from the table, even when \
+the table has a similar figure: the question asks about what the paragraph says.
 - expression: if the answer has to be calculated, an arithmetic expression over the \
 names using only + - * / and parentheses, such as "(rev_2019 - rev_2018) / rev_2018 * \
 100" for a percentage change; "" if nothing has to be calculated. Every name in it \
@@ -246,10 +248,15 @@ def _ask(runtime: Runtime[Context], label: str, system: str, content: str, tool:
 
 def planner(state: State, runtime: Runtime[Context]) -> dict:
     tools = runtime.context.tools
-    table = tools.execute("query_table", {"sql": "SELECT * FROM t ORDER BY row"})
+    # The planner gets what Arm A looks at on its first turn: the whole table and the
+    # paragraphs that best match the question, both read with the shared tools.
+    text_columns = ", ".join(f"c{j}" for j in range(tools.table.n_cols))
+    table = tools.execute("query_table", {"sql": f"SELECT row, {text_columns} FROM t ORDER BY row"})
+    paragraphs = tools.execute("retrieve_text", {"query": state["question"]})
     content = (
-        f"{tools.table.describe()}\n\nThe whole table:\n{table.text}\n\n"
-        f"Question: {state['question']}"
+        f"The table:\n{_render_rows(table.text)}\n\n"
+        f"The paragraphs that best match the question:\n{_render_paragraphs(paragraphs.text)}"
+        f"\n\nQuestion: {state['question']}"
     )
     system = PLANNER_PROMPT.format(answer_rules=ANSWER_RULES)
     raw = _ask(runtime, "planner", system, content, SUBMIT_PLAN_TOOL)
@@ -375,6 +382,25 @@ def synthesizer(state: State, runtime: Runtime[Context]) -> dict:
     if raw is None:
         return {"error": "synthesizer gave no answer"}
     return {"answer": list(raw["answer"]), "scale": raw["scale"]}
+
+
+def _render_rows(query_result: str) -> str:
+    """A query_table result as one labelled line per row: row 3 | c0: "Cable" | c1: ..."""
+    result = json.loads(query_result)
+    lines = []
+    for row in result["rows"]:
+        cells = " | ".join(
+            f"{column}: {json.dumps(value or '', ensure_ascii=False)}"
+            for column, value in zip(result["columns"][1:], row[1:], strict=True)
+        )
+        lines.append(f"row {row[0]} | {cells}")
+    return "\n".join(lines)
+
+
+def _render_paragraphs(retrieve_result: str) -> str:
+    return "\n\n".join(
+        f"Paragraph {h['paragraph']}: {h['text']}" for h in json.loads(retrieve_result)
+    )
 
 
 def _squash(text: str) -> str:
