@@ -1,0 +1,548 @@
+{
+  "arm": "graph",
+  "tag": "",
+  "config": {
+    "arm": "graph",
+    "model": "claude-haiku-5-5",
+    "effort": "medium",
+    "max_output_tokens": 4096,
+    "verifier": false,
+    "retrieval": {
+      "mode": "context",
+      "k": 3,
+      "embedding_model": "BAAI/bge-small-en-v1.5",
+      "embedding_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a"
+    },
+    "prompts": {
+      "planner": "You plan how to answer a question about one company's financial report. The report has a table, shown to you in full, and a few paragraphs of text, which you cannot see. Other steps carry out your plan: they read the table cells you name, search the text for what you ask, and do the arithmetic you write. You do not answer the question yourself.\n\nWrite the plan with submit_plan:\n- table_cells: every table cell the answer needs, each with a short snake_case name, its `row` value and its column number J (for column cJ). Read the header rows to pick the right period and item.\n- text_lookups: anything the answer needs from the text (a reason, a description, a figure the table does not have, or the answer itself when it is a phrase). Give each a name, a search query, and what exactly to quote. Many answers are only in the text, so add a lookup unless the table alone clearly answers the question.\n- expression: if the answer has to be calculated, an arithmetic expression over the names using only + - * / and parentheses, such as \"(rev_2019 - rev_2018) / rev_2018 * 100\" for a percentage change; \"\" if nothing has to be calculated. Every name in it must be a table cell or a text lookup whose quote is a number.\n\nHow the answer is scored\n- It is compared with a gold answer automatically, so give only the answer itself, never a sentence or an explanation.\n\nAnswers copied from the report\n- Copy the shortest exact span that answers the question, word for word. Do not add words that are not part of the answer (\"Calculated based on ...\" when the text says \"(2) Calculated based on ...\": answer \"based on ...\"; not \"They result from ...\").\n- From a paragraph: copy the words as written, including any units or currency in them (for example \"$3.0 million\" or \"over 50 countries\", not a bare number). Scale is \"\".\n- From a table cell: copy the cell text as printed (for example \"1,320\", \"(2,088)\", \"36%\"). Scale is the unit the table states for that amount (\"thousand\", \"million\" or \"billion\", for example from a header \"In thousands\"), or \"\" if it states none or the cell is a year, a label or a percentage.\n- If the question asks for several items, give each one as its own list entry. A single phrase that happens to contain \"and\" is one entry.\n\nAnswers you calculate (differences, changes, totals, averages, ratios, percentages)\n- Compute them with the calculate tool, never in your head, and give the result rounded to 2 decimal places as a bare number, without currency signs, commas or %.\n- A change is new - old and keeps its sign, so a fall is negative. A percentage change is (new - old) / old * 100. If the question asks only how much something decreased, give the decrease as a positive number.\n- Scale: \"percent\" if the result is a percentage (give 12.5 for 12.5%); otherwise the unit the inputs are stated in (\"thousand\", \"million\", \"billion\"), or \"\" for plain numbers and ratios.\n- Counts: the count as a bare number, scale \"\".\n",
+      "reader": "You read paragraphs from a company's financial report and quote what you are asked for. For each request, give its name, the number of the paragraph you quote from, and the exact words from that paragraph: copy them character for character, and quote only what was asked (just the number, as written, if a number was asked for, for example \"$9,028\" or \"12.5%\"). Leave out a request if no paragraph contains it. Submit with submit_findings.",
+      "synthesizer": "You write the final answer to a question about a company's financial report, using only the evidence and the calculation result you are given. Do not calculate anything yourself: if the answer is a calculated number, it is the calculation result. Give the answer with final_answer.\n\nHow the answer is scored\n- It is compared with a gold answer automatically, so give only the answer itself, never a sentence or an explanation.\n\nAnswers copied from the report\n- Copy the shortest exact span that answers the question, word for word. Do not add words that are not part of the answer (\"Calculated based on ...\" when the text says \"(2) Calculated based on ...\": answer \"based on ...\"; not \"They result from ...\").\n- From a paragraph: copy the words as written, including any units or currency in them (for example \"$3.0 million\" or \"over 50 countries\", not a bare number). Scale is \"\".\n- From a table cell: copy the cell text as printed (for example \"1,320\", \"(2,088)\", \"36%\"). Scale is the unit the table states for that amount (\"thousand\", \"million\" or \"billion\", for example from a header \"In thousands\"), or \"\" if it states none or the cell is a year, a label or a percentage.\n- If the question asks for several items, give each one as its own list entry. A single phrase that happens to contain \"and\" is one entry.\n\nAnswers you calculate (differences, changes, totals, averages, ratios, percentages)\n- Compute them with the calculate tool, never in your head, and give the result rounded to 2 decimal places as a bare number, without currency signs, commas or %.\n- A change is new - old and keeps its sign, so a fall is negative. A percentage change is (new - old) / old * 100. If the question asks only how much something decreased, give the decrease as a positive number.\n- Scale: \"percent\" if the result is a percentage (give 12.5 for 12.5%); otherwise the unit the inputs are stated in (\"thousand\", \"million\", \"billion\"), or \"\" for plain numbers and ratios.\n- Counts: the count as a bare number, scale \"\".\n"
+    },
+    "tools": {
+      "planner": {
+        "name": "submit_plan",
+        "description": "Submit the plan. This is the only way to answer.",
+        "strict": true,
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "table_cells": {
+              "type": "array",
+              "description": "Table cells to read, each under a name.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "a short snake_case name"
+                  },
+                  "row": {
+                    "type": "integer",
+                    "description": "the `row` value"
+                  },
+                  "column": {
+                    "type": "integer",
+                    "description": "J for column cJ"
+                  }
+                },
+                "required": [
+                  "name",
+                  "row",
+                  "column"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "text_lookups": {
+              "type": "array",
+              "description": "Things to find in the report's paragraphs.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "a short snake_case name"
+                  },
+                  "query": {
+                    "type": "string",
+                    "description": "search query"
+                  },
+                  "what": {
+                    "type": "string",
+                    "description": "exactly what to quote from the text"
+                  }
+                },
+                "required": [
+                  "name",
+                  "query",
+                  "what"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "expression": {
+              "type": "string",
+              "description": "Arithmetic over the names, e.g. \"(a - b) / b * 100\"; \"\" if no calculation is needed."
+            }
+          },
+          "required": [
+            "table_cells",
+            "text_lookups",
+            "expression"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "reader": {
+        "name": "submit_findings",
+        "description": "Submit what you found. This is the only way to answer.",
+        "strict": true,
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "findings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "a short snake_case name"
+                  },
+                  "paragraph": {
+                    "type": "integer",
+                    "description": "paragraph number"
+                  },
+                  "quote": {
+                    "type": "string",
+                    "description": "the exact words from that paragraph"
+                  }
+                },
+                "required": [
+                  "name",
+                  "paragraph",
+                  "quote"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "findings"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "synthesizer": {
+        "name": "final_answer",
+        "description": "Give the final answer and finish. This is the only way to answer.",
+        "strict": true,
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "answer": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "The answer: one entry, or one entry per item for a list."
+            },
+            "scale": {
+              "type": "string",
+              "enum": [
+                "",
+                "thousand",
+                "million",
+                "billion",
+                "percent"
+              ],
+              "description": "The unit the answer is expressed in."
+            }
+          },
+          "required": [
+            "answer",
+            "scale"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "shared": [
+        {
+          "name": "query_table",
+          "description": "Run one read-only DuckDB SELECT statement against the report's table `t` and return the result. If the query fails, the error comes back so you can fix it.",
+          "strict": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "sql": {
+                "type": "string",
+                "description": "A single SELECT statement."
+              }
+            },
+            "required": [
+              "sql"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "retrieve_text",
+          "description": "Search the report's paragraphs and return the 3 most relevant ones, best first, each with its paragraph number.",
+          "strict": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "What to look for, in plain words."
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "calculate",
+          "description": "Evaluate an arithmetic expression exactly: numbers, + - * / and parentheses only. Example: \"(1320 - 1086) / 1086 * 100\".",
+          "strict": true,
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "expression": {
+                "type": "string",
+                "description": "The expression to evaluate."
+              }
+            },
+            "required": [
+              "expression"
+            ],
+            "additionalProperties": false
+          }
+        }
+      ]
+    }
+  },
+  "complete": true,
+  "planned_questions": 10,
+  "overall": {
+    "n": 10,
+    "em": {
+      "value": 0.7,
+      "k": 7,
+      "n": 10,
+      "ci95": [
+        0.39677814746114537,
+        0.8922087325936989
+      ]
+    },
+    "f1": 0.7,
+    "confident_wrong": {
+      "value": 0.3,
+      "k": 3,
+      "n": 10,
+      "ci95": [
+        0.10779126740630099,
+        0.6032218525388546
+      ]
+    },
+    "abstention": {
+      "value": 0.0,
+      "k": 0,
+      "n": 10,
+      "ci95": [
+        0.0,
+        0.2775327998628892
+      ]
+    },
+    "selective_accuracy": {
+      "value": 0.7,
+      "k": 7,
+      "n": 10,
+      "ci95": [
+        0.39677814746114537,
+        0.8922087325936989
+      ]
+    },
+    "cost_per_1k_usd": 0.7696675,
+    "latency_ms_p50": 6212.635200005025,
+    "latency_ms_p95": 16802.414349978797,
+    "llm_calls_per_question": 2.2,
+    "errors": {}
+  },
+  "answer_from": {
+    "table": {
+      "n": 4,
+      "em": {
+        "value": 0.5,
+        "k": 2,
+        "n": 4,
+        "ci95": [
+          0.15003898915214947,
+          0.8499610108478506
+        ]
+      },
+      "f1": 0.5,
+      "confident_wrong": {
+        "value": 0.5,
+        "k": 2,
+        "n": 4,
+        "ci95": [
+          0.15003898915214947,
+          0.8499610108478506
+        ]
+      },
+      "abstention": {
+        "value": 0.0,
+        "k": 0,
+        "n": 4,
+        "ci95": [
+          0.0,
+          0.4898908364545973
+        ]
+      },
+      "selective_accuracy": {
+        "value": 0.5,
+        "k": 2,
+        "n": 4,
+        "ci95": [
+          0.15003898915214947,
+          0.8499610108478506
+        ]
+      },
+      "cost_per_1k_usd": 0.7014250000000001,
+      "latency_ms_p50": 6212.635200005025,
+      "latency_ms_p95": 6834.486765009933,
+      "llm_calls_per_question": 2.0,
+      "errors": {}
+    },
+    "table-text": {
+      "n": 4,
+      "em": {
+        "value": 1.0,
+        "k": 4,
+        "n": 4,
+        "ci95": [
+          0.5101091635454027,
+          1.0
+        ]
+      },
+      "f1": 1.0,
+      "confident_wrong": {
+        "value": 0.0,
+        "k": 0,
+        "n": 4,
+        "ci95": [
+          0.0,
+          0.4898908364545973
+        ]
+      },
+      "abstention": {
+        "value": 0.0,
+        "k": 0,
+        "n": 4,
+        "ci95": [
+          0.0,
+          0.4898908364545973
+        ]
+      },
+      "selective_accuracy": {
+        "value": 1.0,
+        "k": 4,
+        "n": 4,
+        "ci95": [
+          0.5101091635454027,
+          1.0
+        ]
+      },
+      "cost_per_1k_usd": 0.7843687500000001,
+      "latency_ms_p50": 7051.33659997955,
+      "latency_ms_p95": 20666.76627997076,
+      "llm_calls_per_question": 2.25,
+      "errors": {}
+    },
+    "text": {
+      "n": 2,
+      "em": {
+        "value": 0.5,
+        "k": 1,
+        "n": 2,
+        "ci95": [
+          0.09453120573423074,
+          0.9054687942657693
+        ]
+      },
+      "f1": 0.5,
+      "confident_wrong": {
+        "value": 0.5,
+        "k": 1,
+        "n": 2,
+        "ci95": [
+          0.09453120573423074,
+          0.9054687942657693
+        ]
+      },
+      "abstention": {
+        "value": 0.0,
+        "k": 0,
+        "n": 2,
+        "ci95": [
+          0.0,
+          0.6576197724933469
+        ]
+      },
+      "selective_accuracy": {
+        "value": 0.5,
+        "k": 1,
+        "n": 2,
+        "ci95": [
+          0.09453120573423074,
+          0.9054687942657693
+        ]
+      },
+      "cost_per_1k_usd": 0.8767499999999999,
+      "latency_ms_p50": 6887.5417500094045,
+      "latency_ms_p95": 9286.808774989913,
+      "llm_calls_per_question": 2.5,
+      "errors": {}
+    }
+  },
+  "answer_type": {
+    "arithmetic": {
+      "n": 6,
+      "em": {
+        "value": 0.6666666666666666,
+        "k": 4,
+        "n": 6,
+        "ci95": [
+          0.299993315138392,
+          0.9032285888942195
+        ]
+      },
+      "f1": 0.6666666666666666,
+      "confident_wrong": {
+        "value": 0.3333333333333333,
+        "k": 2,
+        "n": 6,
+        "ci95": [
+          0.09677141110578041,
+          0.700006684861608
+        ]
+      },
+      "abstention": {
+        "value": 0.0,
+        "k": 0,
+        "n": 6,
+        "ci95": [
+          2.7755575615628914e-17,
+          0.3903342879021653
+        ]
+      },
+      "selective_accuracy": {
+        "value": 0.6666666666666666,
+        "k": 4,
+        "n": 6,
+        "ci95": [
+          0.299993315138392,
+          0.9032285888942195
+        ]
+      },
+      "cost_per_1k_usd": 0.6922791666666668,
+      "latency_ms_p50": 5605.779650009936,
+      "latency_ms_p95": 6778.749275006703,
+      "llm_calls_per_question": 2.0,
+      "errors": {}
+    },
+    "multi-span": {
+      "n": 1,
+      "em": {
+        "value": 1.0,
+        "k": 1,
+        "n": 1,
+        "ci95": [
+          0.20654931437723745,
+          1.0
+        ]
+      },
+      "f1": 1.0,
+      "confident_wrong": {
+        "value": 0.0,
+        "k": 0,
+        "n": 1,
+        "ci95": [
+          0.0,
+          0.7934506856227626
+        ]
+      },
+      "abstention": {
+        "value": 0.0,
+        "k": 0,
+        "n": 1,
+        "ci95": [
+          0.0,
+          0.7934506856227626
+        ]
+      },
+      "selective_accuracy": {
+        "value": 1.0,
+        "k": 1,
+        "n": 1,
+        "ci95": [
+          0.20654931437723745,
+          1.0
+        ]
+      },
+      "cost_per_1k_usd": 1.092325,
+      "latency_ms_p50": 9553.393999987748,
+      "latency_ms_p95": 9553.393999987748,
+      "llm_calls_per_question": 3.0,
+      "errors": {}
+    },
+    "span": {
+      "n": 3,
+      "em": {
+        "value": 0.6666666666666666,
+        "k": 2,
+        "n": 3,
+        "ci95": [
+          0.2076596008020477,
+          0.9385080552796037
+        ]
+      },
+      "f1": 0.6666666666666666,
+      "confident_wrong": {
+        "value": 0.3333333333333333,
+        "k": 1,
+        "n": 3,
+        "ci95": [
+          0.06149194472039621,
+          0.7923403991979522
+        ]
+      },
+      "abstention": {
+        "value": 0.0,
+        "k": 0,
+        "n": 3,
+        "ci95": [
+          5.551115123125783e-17,
+          0.5614970317550454
+        ]
+      },
+      "selective_accuracy": {
+        "value": 0.6666666666666666,
+        "k": 2,
+        "n": 3,
+        "ci95": [
+          0.2076596008020477,
+          0.9385080552796037
+        ]
+      },
+      "cost_per_1k_usd": 0.8168916666666668,
+      "latency_ms_p50": 8955.6661999668,
+      "latency_ms_p95": 21355.654519970994,
+      "llm_calls_per_question": 2.3333333333333335,
+      "errors": {}
+    }
+  }
+}
