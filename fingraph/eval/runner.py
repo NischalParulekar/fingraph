@@ -40,16 +40,23 @@ def _single_agent() -> Arm:
     return SingleAgent()
 
 
-def _graph() -> Arm:
-    from dotenv import load_dotenv
+def _graph(verifier: bool) -> Callable[[], Arm]:
+    def make() -> Arm:
+        from dotenv import load_dotenv
 
-    from fingraph.arms.graph import GraphArm
+        from fingraph.arms.graph import GraphArm
 
-    load_dotenv()
-    return GraphArm()
+        load_dotenv()
+        return GraphArm(verifier=verifier)
+
+    return make
 
 
-ARMS: dict[str, Callable[[], Arm]] = {"single_agent": _single_agent, "graph": _graph}
+ARMS: dict[str, Callable[[], Arm]] = {
+    "single_agent": _single_agent,
+    "graph": _graph(verifier=False),
+    "graph_verifier": _graph(verifier=True),
+}
 
 
 def record(example: Example, prediction: Prediction) -> dict:

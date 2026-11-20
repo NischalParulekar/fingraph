@@ -1,4 +1,4 @@
-"""Arm B: a LangGraph pipeline of specialised nodes (Arm C adds the verifier later).
+"""Arms B and C: a LangGraph pipeline of specialised nodes, with or without a verifier.
 
     START -> planner -> table_node | retrieval_node (in parallel) -> calc_node
           -> synthesizer -> END
@@ -16,6 +16,22 @@
 - synthesizer (LLM): writes the final answer and scale from the evidence and the
   calculation, under the same answer rules every arm gets.
 
+Arm C adds, after the synthesizer:
+
+    -> verifier -> END            if the answer passes the evidence check
+                -> retry -> planner   (with the verifier's feedback), at most max_retries
+                -> human_review -> END    once retries are used up
+
+- verifier: the standalone fingraph.verifier, on this attempt's evidence and
+  calculation (unverified quotes support nothing).
+- human_review: in eval mode it abstains, so runs stay automatic; in API mode it calls
+  LangGraph interrupt() and waits for a reviewer to approve, edit or reject, resumed with
+  Command(resume=...). That needs a checkpointer.
+
+Arm B is the same graph with the synthesizer going straight to END; with no retries,
+every evidence item is attempt 0 and the Arm C state keys stay unset, so Arm B behaves
+exactly as it did when frozen.
+
 The tools, the LLM wrapper and the per-question spend are passed as LangGraph run
 context, not graph state, so the state stays plain data a checkpointer can store.
 """
@@ -23,12 +39,13 @@ context, not graph state, so the state stays plain data a checkpointer can store
 import json
 import re
 import time
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, field
 from operator import add
 from typing import Annotated, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.runtime import Runtime
+from langgraph.types import interrupt
 from pydantic import BaseModel, ValidationError
 
 from fingraph.arms.base import ANSWER_RULES, FINAL_ANSWER_TOOL, Prediction
@@ -38,6 +55,7 @@ from fingraph.llm import LLM, Spend
 from fingraph.tools.numbers import parse_financial
 from fingraph.tools.registry import TOOL_DEFINITIONS, ContextTools
 from fingraph.tools.retriever import DEFAULT_K, EMBEDDING_MODEL, EMBEDDING_REVISION, Embedder
+from fingraph.verifier import Calculation, Evidence, unit_hints, verify
 
 # --- structured outputs --------------------------------------------------------------
 
@@ -209,10 +227,15 @@ class State(TypedDict, total=False):
     question: str
     plan: dict
     evidence: Annotated[list[dict], add]  # appended to by the parallel nodes
-    calculation: dict
+    calculation: dict | None
     answer: list[str]
     scale: str
     error: str
+    # Arm C only
+    attempt: int  # 0 for the first plan, +1 per retry; evidence is tagged with it
+    feedback: str  # why the verifier rejected the last answer, for the planner
+    verifier_reports: Annotated[list[dict], add]  # one per verified answer
+    review: dict  # the human_review outcome
 
 
 @dataclass
@@ -220,6 +243,14 @@ class Context:
     llm: LLM
     tools: ContextTools
     spend: Spend
+    unit_hints: list[str] = field(default_factory=list)
+    mode: str = "eval"  # Arm C's human_review: "eval" abstains, "api" interrupts
+
+
+def _current(state: State) -> list[dict]:
+    """The evidence gathered for the current attempt (all of it, for Arm B)."""
+    attempt = state.get("attempt", 0)
+    return [e for e in state.get("evidence", []) if e.get("attempt", 0) == attempt]
 
 
 # --- nodes ---------------------------------------------------------------------------
@@ -258,6 +289,13 @@ def planner(state: State, runtime: Runtime[Context]) -> dict:
         f"The paragraphs that best match the question:\n{_render_paragraphs(paragraphs.text)}"
         f"\n\nQuestion: {state['question']}"
     )
+    if state.get("feedback"):  # Arm C retry
+        content += (
+            f"\n\nA previous plan led to the answer {json.dumps(state.get('answer'))} with "
+            f"scale {json.dumps(state.get('scale'))}, which failed the evidence check:\n"
+            f"{state['feedback']}\nPlan again so that every part of the answer can be found "
+            "in the table, the text or a calculation, with the right scale."
+        )
     system = PLANNER_PROMPT.format(answer_rules=ANSWER_RULES)
     raw = _ask(runtime, "planner", system, content, SUBMIT_PLAN_TOOL)
     if raw is None:
@@ -274,7 +312,13 @@ def table_node(state: State, runtime: Runtime[Context]) -> dict:
     evidence = []
     for cell in state["plan"]["table_cells"]:
         row, col = int(cell["row"]), int(cell["column"])
-        item = {"name": cell["name"], "source": "table", "row": row, "column": col}
+        item = {
+            "name": cell["name"],
+            "source": "table",
+            "row": row,
+            "column": col,
+            "attempt": state.get("attempt", 0),
+        }
         if not 0 <= col < tools.table.n_cols:
             evidence.append({**item, "text": None, "number": None, "error": "no such column"})
             continue
@@ -320,6 +364,7 @@ def retrieval_node(state: State, runtime: Runtime[Context]) -> dict:
                 "text": f.quote,
                 "number": parse_financial(f.quote),
                 "error": None if verified else "quote not found in that paragraph",
+                "attempt": state.get("attempt", 0),
             }
         )
     return {"evidence": evidence}
@@ -328,8 +373,8 @@ def retrieval_node(state: State, runtime: Runtime[Context]) -> dict:
 def calc_node(state: State, runtime: Runtime[Context]) -> dict:
     expression = (state.get("plan") or {}).get("expression", "").strip()
     if not expression:
-        return {}
-    values = {e["name"]: e["number"] for e in state.get("evidence", []) if e["number"] is not None}
+        return {"calculation": None}  # also clears a previous attempt's calculation
+    values = {e["name"]: e["number"] for e in _current(state) if e["number"] is not None}
     missing = []
 
     def substitute(match: re.Match) -> str:
@@ -357,7 +402,7 @@ def calc_node(state: State, runtime: Runtime[Context]) -> dict:
 
 def synthesizer(state: State, runtime: Runtime[Context]) -> dict:
     lines = []
-    for e in state.get("evidence", []):
+    for e in _current(state):
         where = (
             f"table row {e['row']}, column c{e['column']}"
             if e["source"] == "table"
@@ -380,8 +425,79 @@ def synthesizer(state: State, runtime: Runtime[Context]) -> dict:
     )
     raw = _ask(runtime, "synthesizer", SYNTHESIZER_PROMPT, content, FINAL_ANSWER_TOOL)
     if raw is None:
-        return {"error": "synthesizer gave no answer"}
+        return {"error": "synthesizer gave no answer", "answer": [], "scale": ""}
     return {"answer": list(raw["answer"]), "scale": raw["scale"]}
+
+
+# --- Arm C: verifier, retry, human review --------------------------------------------
+
+
+def verifier_node(state: State, runtime: Runtime[Context]) -> dict:
+    """Check the draft against this attempt's evidence with the standalone verifier."""
+    evidence = []
+    for e in _current(state):
+        if e.get("text") and not e.get("error"):  # unverified quotes support nothing
+            where = (
+                f"table row {e['row']}, column c{e['column']}"
+                if e["source"] == "table"
+                else f"paragraph {e['paragraph']}"
+            )
+            evidence.append(Evidence(str(e["text"]), where))
+    calc = state.get("calculation") or {}
+    calculations = (
+        [Calculation(calc["expression"], float(calc["result"]))] if calc.get("result") else []
+    )
+    report = verify(
+        state.get("answer") or [],
+        state.get("scale", ""),
+        evidence,
+        calculations,
+        runtime.context.unit_hints,
+    )
+    record = {
+        "attempt": state.get("attempt", 0),
+        "answer": state.get("answer") or [],
+        "scale": state.get("scale", ""),
+        "passed": report.passed,
+        "supported": [asdict(c) for c in report.supported],
+        "unsupported": [asdict(c) for c in report.unsupported],
+        "scale_problems": report.scale_problems,
+    }
+    update: dict = {"verifier_reports": [record]}
+    if not report.passed:
+        update["feedback"] = report.feedback() or "- no answer was given"
+    return update
+
+
+def retry(state: State) -> dict:
+    return {"attempt": state.get("attempt", 0) + 1, "error": ""}
+
+
+def human_review(state: State, runtime: Runtime[Context]) -> dict:
+    """Retries are used up. Eval mode abstains; API mode asks a reviewer."""
+    if runtime.context.mode == "eval":
+        return {"answer": [], "scale": "", "review": {"action": "abstain", "by": "eval mode"}}
+    decision = interrupt(
+        {
+            "question": state["question"],
+            "answer": state.get("answer") or [],
+            "scale": state.get("scale", ""),
+            "verifier_report": state["verifier_reports"][-1],
+            "evidence": _current(state),
+            "calculation": state.get("calculation"),
+            "actions": ["approve", "edit", "reject"],
+        }
+    )
+    action = decision.get("action")
+    if action == "approve":
+        return {"review": {"action": "approve"}}
+    if action == "edit":
+        return {
+            "answer": list(decision["answer"]),
+            "scale": decision.get("scale", state.get("scale", "")),
+            "review": {"action": "edit"},
+        }
+    return {"answer": [], "scale": "", "review": {"action": "reject"}}
 
 
 def _render_rows(query_result: str) -> str:
@@ -419,7 +535,8 @@ def route_plan(state: State) -> list[str]:
     return branches or ["calc_node"]
 
 
-def build_graph():
+def build_graph(verifier: bool = False, max_retries: int = 2, checkpointer=None):
+    """Arm B (verifier=False) or Arm C: synthesizer -> verifier -> END, retry or review."""
     graph = StateGraph(State, context_schema=Context)
     graph.add_node("planner", planner)
     graph.add_node("table_node", table_node)
@@ -433,27 +550,55 @@ def build_graph():
     graph.add_edge("table_node", "calc_node")
     graph.add_edge("retrieval_node", "calc_node")
     graph.add_edge("calc_node", "synthesizer")
-    graph.add_edge("synthesizer", END)
-    return graph.compile()
+    if not verifier:
+        graph.add_edge("synthesizer", END)
+        return graph.compile(checkpointer=checkpointer)
+
+    def route_verdict(state: State) -> str:
+        if state["verifier_reports"][-1]["passed"]:
+            return END
+        return "retry" if state.get("attempt", 0) < max_retries else "human_review"
+
+    graph.add_node("verifier", verifier_node)
+    graph.add_node("retry", retry)
+    graph.add_node("human_review", human_review)
+    graph.add_edge("synthesizer", "verifier")
+    graph.add_conditional_edges("verifier", route_verdict, [END, "retry", "human_review"])
+    graph.add_edge("retry", "planner")
+    graph.add_edge("human_review", END)
+    return graph.compile(checkpointer=checkpointer)
 
 
 # --- the arm -------------------------------------------------------------------------
 
 
 class GraphArm:
-    name = "graph"
+    """Arm B (verifier=False) or Arm C (verifier=True)."""
 
-    def __init__(self, llm: LLM | None = None, *, embed: Embedder | None = None):
+    def __init__(
+        self,
+        llm: LLM | None = None,
+        *,
+        verifier: bool = False,
+        max_retries: int = 2,
+        mode: str = "eval",
+        checkpointer=None,
+        embed: Embedder | None = None,
+    ):
+        self.name = "graph_verifier" if verifier else "graph"
         self.llm = llm or LLM()
+        self.verifier = verifier
+        self.max_retries = max_retries
+        self.mode = mode
         self._embed = embed
-        self._graph = build_graph()
+        self._graph = build_graph(verifier, max_retries, checkpointer)
 
     @property
     def config(self) -> dict:
-        return {
+        config = {
             "arm": self.name,
             **self.llm.config,
-            "verifier": False,
+            "verifier": self.verifier,
             "retrieval": {
                 "mode": "context",
                 "k": DEFAULT_K,
@@ -472,6 +617,14 @@ class GraphArm:
                 "shared": TOOL_DEFINITIONS,
             },
         }
+        if self.verifier:
+            config.update(max_retries=self.max_retries, mode=self.mode, strict_verifier=False)
+        return config
+
+    def context(self, example: Example, tools: ContextTools, spend: Spend) -> Context:
+        cells = [cell for row in example.table for cell in row]
+        hints = unit_hints(cells, [p.text for p in example.paragraphs])
+        return Context(self.llm, tools, spend, unit_hints=hints, mode=self.mode)
 
     def answer(self, example: Example) -> Prediction:
         start = time.perf_counter()
@@ -480,19 +633,32 @@ class GraphArm:
         try:
             final = self._graph.invoke(
                 {"question": example.question, "evidence": []},
-                context=Context(llm=self.llm, tools=tools, spend=spend),
+                context=self.context(example, tools, spend),
             )
         finally:
             tools.close()
-        answer = final.get("answer") or []
-        state = {k: final.get(k) for k in ("plan", "evidence", "calculation")}
+        return self.prediction(final, spend, time.perf_counter() - start)
+
+    def prediction(self, final: dict, spend: Spend, seconds: float) -> Prediction:
+        # A planner or synthesizer failure, or an abstention after review, is no answer.
+        answer = [] if final.get("error") else (final.get("answer") or [])
+        review = final.get("review") or {}
+        if final.get("error"):
+            error = final["error"]
+        elif review.get("action") in ("abstain", "reject"):
+            error = f"abstained: failed the evidence check ({review['action']})"
+        else:
+            error = None if answer else "empty answer"
+        keys = ["plan", "evidence", "calculation"]
+        if self.verifier:
+            keys += ["attempt", "verifier_reports", "review"]
         return Prediction(
             answer=answer,
-            scale=final.get("scale", ""),
-            latency_ms=(time.perf_counter() - start) * 1000,
+            scale=final.get("scale", "") if answer else "",
+            latency_ms=seconds * 1000,
             cost_usd=spend.cost_usd,
             tokens=spend.tokens,
             llm_calls=spend.calls,
-            error=final.get("error") or (None if answer else "empty answer"),
-            trace=[*spend.steps, {"label": "graph_state", **state}],
+            error=error,
+            trace=[*spend.steps, {"label": "graph_state", **{k: final.get(k) for k in keys}}],
         )

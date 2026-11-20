@@ -19,30 +19,21 @@ it would wrongly reject (correct answers that fail) and catch (wrong answers tha
 
 import argparse
 import json
-import re
 from pathlib import Path
 
 from fingraph.data.tatqa import load
-from fingraph.verifier import Calculation, Evidence, Report, verify
+from fingraph.verifier import Calculation, Evidence, Report, unit_hints, verify
 
-_UNIT_HINT = re.compile(r"thousand|million|billion|'000|\$000|%|percent", re.IGNORECASE)
 SPLIT_SOURCE = {"dev": "dev", "heldout": "test"}
-
-
-def unit_hints(grid, paragraphs=()) -> list[str]:
-    """Table cells and paragraph sentences that name a unit."""
-    hints = [cell for row in grid for cell in row if cell and _UNIT_HINT.search(cell)]
-    for p in paragraphs:
-        hints += [s for s in re.split(r"(?<=[.;])\s+", p.text) if _UNIT_HINT.search(s)]
-    return hints
 
 
 def inputs_from_trace(trace: list[dict]) -> tuple[list[Evidence], list[Calculation]]:
     evidence, calculations = [], []
     for step in trace:
         if step.get("label") == "graph_state":
+            attempt = step.get("attempt") or 0  # Arm C: only the final attempt's evidence
             for e in step.get("evidence") or []:
-                if e.get("text"):
+                if e.get("text") and e.get("attempt", 0) == attempt:
                     where = (
                         f"table row {e['row']}, column c{e['column']}"
                         if e["source"] == "table"
@@ -72,7 +63,9 @@ def inputs_from_trace(trace: list[dict]) -> tuple[list[Evidence], list[Calculati
 
 def check(record: dict, example) -> Report:
     evidence, calculations = inputs_from_trace(record["trace"])
-    hints = unit_hints(example.table, example.paragraphs)
+    hints = unit_hints(
+        [c for row in example.table for c in row], [p.text for p in example.paragraphs]
+    )
     return verify(record["answer"], record["scale"], evidence, calculations, hints)
 
 

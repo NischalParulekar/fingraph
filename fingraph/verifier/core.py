@@ -81,6 +81,17 @@ class Report:
         return "\n".join(lines)
 
 
+_UNIT_HINT = re.compile(r"thousand|million|billion|'000|\$000|%|percent", re.IGNORECASE)
+
+
+def unit_hints(cells: list[str], paragraphs: list[str] = ()) -> list[str]:
+    """The table cells and paragraph sentences that name a unit ("In thousands", ...)."""
+    hints = [cell for cell in cells if cell and _UNIT_HINT.search(cell)]
+    for text in paragraphs:
+        hints += [s for s in re.split(r"(?<=[.;])\s+", text) if _UNIT_HINT.search(s)]
+    return hints
+
+
 def parse_number(text: str) -> float | None:
     s = text.strip().replace("$", "").replace(",", "").replace(" ", "").rstrip("%")
     negative = s.startswith("(") and s.endswith(")")
