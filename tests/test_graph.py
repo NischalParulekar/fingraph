@@ -13,11 +13,16 @@ def arm(responses):
     return GraphArm(LLM(client=client), embed=keyword_embedder), client
 
 
-def plan(cells=(), lookups=(), expression=""):
+def plan(cells=(), lookups=(), expression="", scale=""):
     return tool_use(
         "p",
         "submit_plan",
-        {"table_cells": list(cells), "text_lookups": list(lookups), "expression": expression},
+        {
+            "table_cells": list(cells),
+            "text_lookups": list(lookups),
+            "expression": expression,
+            "scale": scale,
+        },
     )
 
 
@@ -31,6 +36,7 @@ def test_table_question_runs_planner_table_calc_and_synthesizer():
                         {"name": "w2018", "row": 2, "column": 2},
                     ],
                     expression="(w2019 - w2018) / w2018 * 100",
+                    scale="percent",
                 )
             ),
             response(tool_use("f", "final_answer", {"answer": ["21.55"], "scale": "percent"})),
@@ -51,6 +57,7 @@ def test_table_question_runs_planner_table_calc_and_synthesizer():
     assert '"Wireless"' in client.requests[0]["messages"][0]["content"]
     synth_input = client.requests[1]["messages"][0]["content"]
     assert "table row 2, column c1" in synth_input and "= 21.546961326" in synth_input
+    assert 'Planned scale: "percent"' in synth_input
     assert record(EXAMPLE, prediction)["em"] == 1.0
 
 
