@@ -31,21 +31,40 @@ class Arm(Protocol):
 # How TAT-QA answers are scored, told to every arm in the same words. The official
 # scorer compares numbers after rounding to 2 decimals and multiplying by the scale, and
 # compares text after normalisation, so the form of an answer decides whether it counts.
+#
+# v2 (2026-11-20), after the first dev run. The conventions were measured on the whole
+# official dev split (never on held-out): text spans have scale "" in 343 of 349 cases;
+# copied cells with a % sign have scale "" in 46 of 46; a "change" keeps its sign (121 of
+# 314 are negative); a question that asks only for a "decrease" has a positive answer.
 ANSWER_RULES = """\
 How the answer is scored
 - It is compared with a gold answer automatically, so give only the answer itself, \
 never a sentence or an explanation.
-- Text answers: copy the words exactly as they appear in the table or the paragraph.
-- If the question asks for several items, give each one as its own list entry.
-- Numbers you calculate (differences, changes, totals, averages, ratios, percentages): \
-compute them with the calculate tool, never in your head, and give the result rounded \
-to 2 decimal places as a bare number, without currency signs or %.
-- Percentage change is (new - old) / old * 100.
-- Counts: the count as a bare number.
-- `scale` is the unit the number is in. Use "thousand", "million" or "billion" for an \
-amount that the report states in those units (for example a table headed "In \
-thousands"), also when you copy the amount as it is. Use "percent" for any percentage \
-(give 12.5 for 12.5%). Use "" for counts, years, plain ratios and text answers.
+
+Answers copied from the report
+- Copy the shortest exact span that answers the question, word for word. Do not add \
+words that are not part of the answer ("Calculated based on ..." when the text says \
+"(2) Calculated based on ...": answer "based on ..."; not "They result from ...").
+- From a paragraph: copy the words as written, including any units or currency in \
+them (for example "$3.0 million" or "over 50 countries", not a bare number). Scale \
+is "".
+- From a table cell: copy the cell text as printed (for example "1,320", "(2,088)", \
+"36%"). Scale is the unit the table states for that amount ("thousand", "million" or \
+"billion", for example from a header "In thousands"), or "" if it states none or the \
+cell is a year, a label or a percentage.
+- If the question asks for several items, give each one as its own list entry. A \
+single phrase that happens to contain "and" is one entry.
+
+Answers you calculate (differences, changes, totals, averages, ratios, percentages)
+- Compute them with the calculate tool, never in your head, and give the result \
+rounded to 2 decimal places as a bare number, without currency signs, commas or %.
+- A change is new - old and keeps its sign, so a fall is negative. A percentage change \
+is (new - old) / old * 100. If the question asks only how much something decreased, \
+give the decrease as a positive number.
+- Scale: "percent" if the result is a percentage (give 12.5 for 12.5%); otherwise the \
+unit the inputs are stated in ("thousand", "million", "billion"), or "" for plain \
+numbers and ratios.
+- Counts: the count as a bare number, scale "".
 """
 
 FINAL_ANSWER_TOOL = {

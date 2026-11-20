@@ -3,7 +3,7 @@
     python -m fingraph.eval.runner --arm single_agent --split dev --max-cost 0.20
     python -m fingraph.eval.runner --arm single_agent --split dev --limit 10 --max-cost 0.05
 
-Writes to results/<split>[-first<limit>]/:
+Writes to results/<split>[-first<limit>]/ (file names get -<tag> with --tag):
 - <arm>.predictions.jsonl  one line per question: the answer, its scores and the full
                            trace (every model call and tool call), so anyone can re-score
                            it or audit a single answer;
@@ -104,10 +104,11 @@ def _percentile(ordered: list[float], q: float) -> float:
     return ordered[low] + (ordered[high] - ordered[low]) * (position - low)
 
 
-def run(arm: Arm, examples: list[Example], max_cost: float, out: Path) -> dict:
+def run(arm: Arm, examples: list[Example], max_cost: float, out: Path, tag: str = "") -> dict:
     out.mkdir(parents=True, exist_ok=True)
+    stem = f"{arm.name}-{tag}" if tag else arm.name
     records, spent = [], 0.0
-    with open(out / f"{arm.name}.predictions.jsonl", "w", encoding="utf-8", newline="\n") as f:
+    with open(out / f"{stem}.predictions.jsonl", "w", encoding="utf-8", newline="\n") as f:
         for i, example in enumerate(examples):
             if spent >= max_cost:
                 print(f"stopped at --max-cost ${max_cost} after {i} questions", file=sys.stderr)
@@ -127,13 +128,14 @@ def run(arm: Arm, examples: list[Example], max_cost: float, out: Path) -> dict:
     }
     summary = {
         "arm": arm.name,
+        "tag": tag,
         "config": arm.config,
         "complete": len(records) == len(examples),
         "planned_questions": len(examples),
         "overall": summarize(records),
         **by_group,
     }
-    (out / f"{arm.name}.summary.json").write_text(
+    (out / f"{stem}.summary.json").write_text(
         json.dumps(summary, indent=2, default=str) + "\n", encoding="utf-8", newline="\n"
     )
     return summary
@@ -145,13 +147,14 @@ def main() -> None:
     parser.add_argument("--split", choices=["dev", "heldout"], required=True)
     parser.add_argument("--limit", type=int, help="only the first N questions of the split")
     parser.add_argument("--max-cost", type=float, required=True, help="USD; stop once spent")
+    parser.add_argument("--tag", default="", help="version label added to the output names")
     args = parser.parse_args()
 
     examples = load_split(args.split)
     name = args.split
     if args.limit:
         examples, name = examples[: args.limit], f"{args.split}-first{args.limit}"
-    summary = run(ARMS[args.arm](), examples, args.max_cost, RESULTS_DIR / name)
+    summary = run(ARMS[args.arm](), examples, args.max_cost, RESULTS_DIR / name, args.tag)
     print(json.dumps(summary["overall"], indent=2))
 
 

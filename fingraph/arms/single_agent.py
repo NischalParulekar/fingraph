@@ -23,8 +23,9 @@ a few paragraphs of text, and the tools are your only access to them:
 
 How to work
 - Start by looking at the table with query_table (it is small, so SELECT * is fine) \
-and, if the question may be answered in the text, by searching the paragraphs. You can \
-call several tools in the same turn.
+and by searching the paragraphs with retrieve_text. You can call both in the same turn. \
+Many answers are only in the text, or need a number from the text, so search it even \
+when the table looks relevant.
 - Read the header rows: they say which column is which period and what unit the \
 amounts are in.
 - Do every calculation with calculate.
