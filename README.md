@@ -183,6 +183,12 @@ What the failures say:
   "-3,753" is right. Answers written the accounts way are marked wrong.
 - **A pipeline bug in Arm B/C:** a quoted "$1.9 million" parses to no number, so the
   calculation that needed it fails. Arms are frozen, so it stays, and is reported here.
+- **A verifier false reject, found later through the API (dev question 7cba7400):** the
+  verifier's unit patterns know "$m" but not "€m" or "£m", so a correct answer of 1040
+  million from a table in "€m", in a report whose text mentions billions, was flagged
+  as "the report states amounts in billions". Human review approved it. The verifier is
+  part of the frozen Arm C, so this stays as measured; it is the first fix for the
+  verifier's next version.
 
 ## Deviations from the project spec
 
