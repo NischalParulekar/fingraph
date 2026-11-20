@@ -8,7 +8,7 @@ resource "aws_lb" "api" {
   # Two subnets (the minimum; default subnets are one per zone): each one gives the
   # load balancer a public IPv4 address, and AWS bills every one, about $3.65 a month.
   subnets      = slice(sort(data.aws_subnets.default.ids), 0, 2)
-  idle_timeout       = 150 # an answer can take a while; CloudFront waits at most 60 s
+  idle_timeout = 150 # an answer can take a while; CloudFront waits at most 60 s
 }
 
 resource "aws_lb_target_group" "api" {
