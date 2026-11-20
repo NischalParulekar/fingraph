@@ -4,9 +4,11 @@ A LangGraph multi-agent analyst that answers questions over financial reports th
 tables and text (TAT-QA), and an honest experiment on whether graph orchestration beats a
 single tool-loop agent that has the same tools and the same model.
 
-**Status:** the experiment is finished and written up below. The API, a demo UI and two
-deployments (Render, AWS) are built; neither deployment is live yet. Every number in
-this README comes from a committed run in `results/` with its config and raw outputs.
+**Status:** the experiment is finished and written up below. The API is live on Render's
+free tier at <https://fingraph-api-3psv.onrender.com> (try `/healthz`; it sleeps when idle,
+so the first request can take a minute). The AWS deployment is written but not running.
+Every number in this README comes from a committed run in `results/` with its config and
+raw outputs.
 
 ## In short
 
@@ -337,7 +339,8 @@ paid plan.
 
 ## Deployment
 
-**Render (the public demo).** `render.yaml` is a Blueprint: a free Docker web service and
+**Render (the public demo, live at <https://fingraph-api-3psv.onrender.com>).**
+`render.yaml` is a Blueprint: a free Docker web service and
 a free Postgres for Arm C's checkpoints. Render allows one free Key Value (Redis) instance
 per workspace, so the service shares tableqa's: `REDIS_URL` is set by hand to its
 internal connection string, and the projects' keys cannot collide (prefixes `fingraph:`
