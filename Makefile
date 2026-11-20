@@ -6,7 +6,7 @@
 # make retrieval  retrieval hit/recall, context vs corpus mode (no model calls)
 # make test, make lint
 
-.PHONY: install data splits db stack aws-up aws-down retrieval test lint eval-dev-a eval-heldout report plots labels demo ui
+.PHONY: install data splits db stack aws-up aws-down retrieval test lint eval-dev-a eval-heldout eval report plots labels demo ui
 
 install:
 	uv sync --locked --extra torch --extra onnx
@@ -48,6 +48,8 @@ eval-heldout:
 	uv run python -m fingraph.eval.runner --arm graph_verifier --split heldout --max-cost 0.60
 
 # Free: the README's held-out table and hypothesis tests, from the committed run files.
+eval: report
+
 report:
 	uv run python -m fingraph.eval.report results/heldout
 

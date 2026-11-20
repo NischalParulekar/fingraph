@@ -4,8 +4,25 @@ A LangGraph multi-agent analyst that answers questions over financial reports th
 tables and text (TAT-QA), and an honest experiment on whether graph orchestration beats a
 single tool-loop agent that has the same tools and the same model.
 
-**Status:** week 3 of 4. Held-out results are in. Every number in this README comes from a
-committed run in `results/` with its config and raw outputs.
+**Status:** the experiment is finished and written up below. The API, a demo UI and two
+deployments (Render, AWS) are built; neither deployment is live yet. Every number in
+this README comes from a committed run in `results/` with its config and raw outputs.
+
+## In short
+
+- **The graph does not beat the single agent.** On 500 held-out TAT-QA questions, a
+  LangGraph pipeline of specialised steps scored 69.2% exact match against 71.6% for one
+  tool-using agent with the same model and tools (p = 0.18), and cost 1.48x as much as
+  billed.
+- **The verifier is what helps.** Adding an evidence verifier to the graph cut
+  confidently wrong answers from 30.8% to 26.2% (p = 0.0014) at the price of 2.4%
+  abstentions, bringing the graph level with the single agent on accuracy.
+- **It catches made-up numbers, not wrong-but-grounded ones.** Most remaining errors are
+  answer form (a span a word too long) or a right number from the wrong row; about 1 in
+  12 sampled failures looks like an error in the benchmark itself.
+- **Try it:** the demo UI replays recorded runs with the evidence marked in the report,
+  and against the live API it shows a paused answer for a person to approve, correct or
+  reject (screenshot under [The demo UI](#the-demo-ui)).
 
 ## Research question
 
@@ -46,25 +63,35 @@ failed.
 
 ## Arms
 
+All three use Claude Haiku 5.5 at the same `effort`, the same three tools and the same
+answer rules; only the orchestration and the verifier differ.
+
 | Arm | Description |
 |---|---|
 | A: single agent | One tool-use loop with `query_table` (DuckDB), `retrieve_text`, `calculate`. |
-| B: graph | LangGraph pipeline: planner → table / retrieval / calc nodes → synthesizer. |
+| B: graph | LangGraph pipeline: planner, then table / retrieval / calc nodes, then synthesizer. |
 | C: graph + verifier | Arm B plus an evidence verifier with retry and abstain. |
+
+```
+Arm B   question -> planner -+-> table node ------+
+                             +-> retrieval node --+-> calc node -> synthesizer -> answer
+
+Arm C   ... synthesizer -> verifier -+- pass ----------------------------> answer
+                                     +- fail, retries left --> planner, with the feedback
+                                     +- fail, none left ----> human review (API) / abstain (eval)
+```
+
+Only the planner, the reader inside the retrieval node and the synthesizer call the
+model; table lookups and arithmetic are deterministic, and every value keeps its table
+coordinates or paragraph. The verifier (`fingraph/verifier/`) has no LangGraph imports,
+so other projects can reuse it.
 
 ## Results (held-out, run once)
 
-**Headline: the graph does not beat the single agent; the verifier is what helps.** On
-500 held-out questions the LangGraph pipeline (B) is no more accurate than one tool-loop
-agent with the same tools and model (71.6% vs 69.2% EM, p = 0.18), and costs 1.48x as
-much as billed. Adding the evidence verifier (C) cuts confident-wrong answers from 30.8%
-to 26.2% against B (p = 0.0014) for 2.4% abstentions, which brings the graph level with
-the single agent on accuracy (71.4% vs 71.6%) but not below it on confident-wrong (26.2%
-vs 28.4%, p = 0.24).
-
 All three arms were frozen (tag `arms-frozen-heldout`) before this run, which is the only
-one on the held-out set. Produced by `make report` from the committed run files in
-`results/heldout/`.
+one on the held-out set. `make eval` rebuilds this section's tables and tests from the
+committed run files in `results/heldout/`, with no model calls. Development runs are
+in [results/dev/README.md](results/dev/README.md).
 
 Held-out set: 500 questions from the TAT-QA test split. EM, confident-wrong and abstention with Wilson 95% intervals.
 
@@ -190,14 +217,47 @@ What the failures say:
   part of the frozen Arm C, so this stays as measured; it is the first fix for the
   verifier's next version.
 
+## Related work
+
+Published TAT-QA results, from the [official leaderboard](https://nextplusplus.github.io/TAT-QA)
+(read on 20 November 2026; the page takes submissions on the test set but does not
+label the leaderboard's split):
+
+| System | EM | F1 | Source |
+|---|---|---|---|
+| Human experts | 84.1 | 90.8 | leaderboard; [Zhu et al., ACL 2021](https://aclanthology.org/2021.acl-long.254) |
+| TAT-LLM (70B), fine-tuned; the top entry | 81.4 | 88.4 | leaderboard, 20 Jan 2024 |
+| TAT-LLM (7B), fine-tuned | 76.4 | 85.1 | leaderboard, 20 Jan 2024 |
+| TagOp, the original baseline | 50.1 | 58.0 | leaderboard; Zhu et al., ACL 2021 |
+| This project, Arms A / B / C (Haiku 5.5, no fine-tuning) | 71.6 / 69.2 / 71.4 | 81.0 / 78.4 / 79.4 | `results/heldout/` |
+
+Not directly comparable: these runs score a stratified 500-question sample of the test
+split, not the whole of it, and this project's question is the comparison between its
+own arms, not a place on the leaderboard.
+
+## Limitations
+
+- **One model.** Every arm runs on Claude Haiku 5.5. A stronger planner (the spec's
+  optional Arm D) might change the A vs B result; it was not run.
+- **One held-out sample of 500.** Differences of a couple of points are within run-to-run
+  noise (about 3% of questions change correctness between identical runs, measured on
+  dev); only the paired tests above should be read as findings.
+- **Each arm had one round of development on dev,** then was frozen. More tuning might
+  move either of them, which is why the dev numbers are kept separate.
+- **The error labels are unreviewed.** Claude assigned them while reading the traces; a
+  person has not checked them yet.
+- **The verifier has known holes** (under Error analysis and in [FUTURE.md](FUTURE.md)),
+  kept as measured because Arm C is frozen.
+- **The live demo's retriever differs slightly** from the evaluated one (see Deployment).
+
 ## Deviations from the project spec
 
 Recorded here so nobody has to find them in the diff.
 
 - **No temperature setting.** The spec asks for temperature 0. Claude Haiku 5.5 rejects
   any non-default `temperature` with a 400, so runs are not deterministic. Every arm uses
-  the same fixed `effort` instead, and run-to-run variation will be measured with a
-  repeat run of Arm A on the dev subset.
+  the same fixed `effort` instead. A repeat run of Arm A on dev measured the noise:
+  about 3% of questions change correctness between identical runs.
 - **No Wilson CI code to reuse.** The spec says tableqa has Wilson intervals; it has only
   the sign test. `fingraph/eval/stats.py` adds Wilson intervals and copies the sign
   test.
@@ -207,6 +267,11 @@ Recorded here so nobody has to find them in the diff.
   orchestrates arms B and C; it does not need a LangChain chat model for that.
 - **tableqa code is vendored, not imported.** tableqa pins Python 3.11 and this project
   uses 3.12, so the DuckDB sandbox and table code are copied with a note of their source.
+- **The held-out arms ran side by side,** which let Arm C reuse Arm B's cached prompts and
+  lowered C's billed cost; the results section gives the run-alone figure, and `make
+  eval-heldout` now runs the arms one after another.
+- **The demo serves an ONNX embedder** to fit a 512 MB server; the evaluation used the
+  PyTorch one (see Deployment).
 
 ## Retrieval: context mode vs corpus mode
 
@@ -298,15 +363,33 @@ to be up for a few days to record the demo and then destroyed; see
 ## Running it
 
 ```
-make install    # Python 3.12 + locked dependencies (uv)
+make install    # Python 3.12 + locked dependencies (uv), both embedders
 make data       # download TAT-QA (pinned commit) into data/ - not redistributed here
+make test       # the Postgres tests are skipped if the database is not running
+make eval       # rebuild the held-out tables and tests from the committed runs (free)
+make plots      # the plots and Arm C's coverage replay (free)
 make db         # Postgres 16 + pgvector in Docker, and index the paragraphs
 make stack      # the API with Postgres, Redis, Prometheus and Grafana (needs .env)
-make test       # the Postgres tests are skipped if the database is not running
+make ui         # the demo UI on :5173 against the API
 ```
 
 Paid runs need `ANTHROPIC_API_KEY` in a git-ignored `.env` (see `.env.example`), and each
-one stops at its `--max-cost`.
+one stops at its `--max-cost`. The held-out run (`make eval-heldout`) was done once and
+should not be repeated without a note here.
+
+## Repository layout
+
+```
+fingraph/data      TAT-QA loader and the frozen splits (question IDs in splits/)
+fingraph/tools     DuckDB table sandbox, retrievers (in memory, pgvector), calculator
+fingraph/arms      single_agent.py (A), graph.py (B and C)
+fingraph/verifier  the evidence verifier, standalone
+fingraph/eval      runner, official scorer, statistics, report, plots, error analysis
+fingraph/api       FastAPI service: ask, runs, review resume, cache, metrics
+frontend/          the demo UI (React + Vite)
+infra/aws/         Terraform for the temporary AWS deployment
+results/           every run's config, predictions with traces, and summaries
+```
 
 ## Dataset and licence
 
