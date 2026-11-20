@@ -30,6 +30,8 @@ packages = ["fingraph"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# The vendored official scorer has invalid escape sequences in plain strings; harmless.
+filterwarnings = ["ignore::SyntaxWarning"]
 
 [tool.ruff]
 line-length = 100
