@@ -4,8 +4,8 @@ A LangGraph multi-agent analyst that answers questions over financial reports th
 tables and text (TAT-QA), and an honest experiment on whether graph orchestration beats a
 single tool-loop agent that has the same tools and the same model.
 
-**Status:** week 1 of 4. No results yet. Every number in this README will come from a
-committed run in `results/` with its config and raw outputs; until then it says `TBD`.
+**Status:** week 3 of 4. Held-out results are in. Every number in this README comes from a
+committed run in `results/` with its config and raw outputs.
 
 ## Research question
 
@@ -52,13 +52,72 @@ failed.
 | B: graph | LangGraph pipeline: planner → table / retrieval / calc nodes → synthesizer. |
 | C: graph + verifier | Arm B plus an evidence verifier with retry and abstain. |
 
-## Results
+## Results (held-out, run once)
 
-| Arm | EM | F1 | Confident-wrong | Abstain | Cost / 1k q |
-|---|---|---|---|---|---|
-| A | TBD | TBD | TBD | TBD | TBD |
-| B | TBD | TBD | TBD | TBD | TBD |
-| C | TBD | TBD | TBD | TBD | TBD |
+**Headline: the graph does not beat the single agent; the verifier is what helps.** On
+500 held-out questions the LangGraph pipeline (B) is no more accurate than one tool-loop
+agent with the same tools and model (71.6% vs 69.2% EM, p = 0.18), and costs 1.48x as
+much as billed. Adding the evidence verifier (C) cuts confident-wrong answers from 30.8%
+to 26.2% against B (p = 0.0014) for 2.4% abstentions, which brings the graph level with
+the single agent on accuracy (71.4% vs 71.6%) but not below it on confident-wrong (26.2%
+vs 28.4%, p = 0.24).
+
+All three arms were frozen (tag `arms-frozen-heldout`) before this run, which is the only
+one on the held-out set. Produced by `make report` from the committed run files in
+`results/heldout/`.
+
+Held-out set: 500 questions from the TAT-QA test split. EM, confident-wrong and abstention with Wilson 95% intervals.
+
+| Arm | EM | F1 | Confident-wrong | Abstain | Selective acc. | Cost / 1k q | Tokens / q | LLM calls / q | p50 / p95 latency |
+|---|---|---|---|---|---|---|---|---|---|
+| A: single agent | 71.6% (67.5-75.4) | 0.810 | 28.4% (24.6-32.5) | 0.0% (0.0-0.8) | 71.6% | $0.56 | 6,411 | 2.45 | 3.1 / 4.2 s |
+| B: graph | 69.2% (65.0-73.1) | 0.784 | 30.8% (26.9-35.0) | 0.0% (0.0-0.8) | 69.2% | $0.82 | 4,794 | 2.28 | 4.5 / 7.5 s |
+| C: graph + verifier | 71.4% (67.3-75.2) | 0.794 | 26.2% (22.5-30.2) | 2.4% (1.4-4.1) | 73.2% | $0.53 | 5,357 | 2.54 | 4.6 / 10.8 s |
+
+- **H1 (B beats A on EM): not supported.** Paired over 500 questions: B right and A wrong on 28, A right and B wrong on 40, 432 ties; exact sign test p = 0.182.
+- **H2 (C has fewer confident-wrong answers than B): supported.** 36 questions confidently wrong in B but not in C, 13 the other way, 451 ties; p = 0.0014. The cost: abstention 2.4% vs 0.0%, 5,357 vs 4,794 tokens per question.
+- **H3 (B costs more than A): supported.** B costs 1.48x A per question ($0.82 vs $0.56 per 1k), C 0.96x as billed (see the cost table below).
+- A vs C, not a pre-registered test: EM 36 C-only right vs 37 A-only right (p = 1); confident-wrong 41 fewer in C vs 30 more (p = 0.235).
+
+Cost per 1k questions, three ways (see `cost_views` in fingraph/eval/report.py):
+
+| Arm | Billed | Billed if run alone | With caching off | Cache-read tokens / q |
+|---|---|---|---|---|
+| A: single agent | $0.555 | $0.555 | $0.767 | 3,165 |
+| B: graph | $0.824 | $0.824 | $0.720 | 3 |
+| C: graph + verifier | $0.532 | $0.928 | $0.812 | 3,444 |
+
+EM by question type (n per row):
+
+| Group | n | A | B | C |
+|---|---|---|---|---|
+| answer_from = table | 222 | 81.1% | 79.7% | 79.3% |
+| answer_from = table-text | 164 | 81.1% | 78.0% | 80.5% |
+| answer_from = text | 114 | 39.5% | 36.0% | 43.0% |
+| answer_type = arithmetic | 210 | 83.3% | 83.8% | 83.3% |
+| answer_type = count | 12 | 66.7% | 83.3% | 83.3% |
+| answer_type = multi-span | 63 | 82.5% | 74.6% | 77.8% |
+| answer_type = span | 215 | 57.2% | 52.6% | 57.2% |
+
+Unsupported-number rate (answers with a number found neither in the arm's evidence nor in
+a logged calculation; same verifier code for every arm, run offline,
+`results/heldout/unsupported_numbers.json`): A 4/500 (0.8%), B 21/500 (4.2%), C 0/488
+answered (0.0%; C only answers once the verifier passes, so this is by construction).
+
+Notes on the numbers:
+- **Cost depends on caching.** Every arm sends prompts with automatic prompt caching on.
+  Arm A's loop re-sends its conversation, so caching saves it money; each graph call is a
+  one-off prompt, so B and C pay the cache-write premium and almost never read it back.
+  With caching switched off, B would cost 0.94x A, not 1.48x. H3 is judged on the billed
+  cost, as METRICS.md defines it.
+- **C's billed cost is too low.** B and C ran at the same time and send identical
+  planner prompts for the same question, so C read B's cached prompts (3,444 cache-read
+  tokens per question). Run alone, C would have been billed $0.93 per 1k questions,
+  1.67x A. That is the figure to use for C.
+- **Dev numbers were optimistic.** Arm A was 77.3% EM on dev and is 71.6% here; the
+  prompts were tuned on dev, as allowed, and the drop is the price of that.
+- Run-to-run noise: about 3% of questions change correctness between two identical runs
+  (measured on dev; `results/dev/README.md`).
 
 ## Deviations from the project spec
 

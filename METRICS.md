@@ -27,3 +27,10 @@ With N questions in the set:
 
 Proportions are reported with Wilson 95% intervals. Paired comparisons between arms use
 the two-sided exact sign test over questions where the two arms differ.
+
+## Notes
+
+- 2026-11-20: the held-out report (`fingraph/eval/report.py`) also shows cost per 1k
+  questions with caching off, and "billed if run alone" for the graph arms (their cache
+  reads, which can only come from a concurrent run, repriced as writes). Cost per 1k as
+  defined above is unchanged and is what H3 is judged on.
