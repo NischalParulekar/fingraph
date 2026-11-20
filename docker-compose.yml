@@ -1,0 +1,26 @@
+# Local development stack. For now only Postgres 16 with pgvector, which holds both the
+# paragraph vectors and the LangGraph checkpoints. The API, Redis, Prometheus and
+# Grafana join when the service is built.
+#
+#   docker compose up -d        then   make test   (the Postgres tests run when it is up)
+#   docker compose down         (add -v to drop the data volume)
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.1-pg16
+    environment:
+      POSTGRES_USER: fingraph
+      POSTGRES_PASSWORD: fingraph  # local development only
+      POSTGRES_DB: fingraph
+    ports:
+      - "127.0.0.1:5433:5432"  # 5433 so it cannot clash with a Postgres already on 5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fingraph -d fingraph"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  pgdata:

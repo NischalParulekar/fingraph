@@ -78,12 +78,30 @@ Recorded here so nobody has to find them in the diff.
 - **tableqa code is vendored, not imported.** tableqa pins Python 3.11 and this project
   uses 3.12, so the DuckDB sandbox and table code are copied with a note of their source.
 
+## Retrieval: context mode vs corpus mode
+
+The arms retrieve in **context mode**: only the paragraphs of the question's own report.
+All headline numbers use it. **Corpus mode** searches all 2,635 paragraphs of the dev and
+test reports in pgvector, to show retrieval at a more realistic scale. Measured on the
+901 official-dev questions that have gold relevant paragraphs, with the question as the
+query (`make retrieval`, `results/retrieval/dev-official.json`; no model calls):
+
+| Mode | hit@1 | hit@3 | recall@3 |
+|---|---|---|---|
+| Context (in memory, or pgvector filtered to the report) | 64.0% | 91.0% | 90.1% |
+| Corpus (pgvector, all reports) | 33.7% | 45.1% | 44.4% |
+
+pgvector in context mode returns the same top-3 ranking as the in-memory retriever on
+all 901 questions. Context mode is easy partly because many reports have only 2-3
+paragraphs.
+
 ## Running it
 
 ```
 make install    # Python 3.12 + locked dependencies (uv)
 make data       # download TAT-QA (pinned commit) into data/ - not redistributed here
-make test
+make db         # Postgres 16 + pgvector in Docker, and index the paragraphs
+make test       # the Postgres tests are skipped if the database is not running
 ```
 
 Paid runs need `ANTHROPIC_API_KEY` in a git-ignored `.env` (see `.env.example`), and each
