@@ -71,6 +71,10 @@ Recorded here so nobody has to find them in the diff.
 - **No Wilson CI code to reuse.** The spec says tableqa has Wilson intervals; it has only
   the sign test. `fingraph/eval/stats.py` adds Wilson intervals and copies the sign
   test.
+- **Anthropic SDK instead of langchain-anthropic for model calls.** Every arm calls the
+  model through one wrapper (`fingraph/llm.py`) on the Anthropic SDK, so the request
+  settings and the cost accounting are identical across arms. LangGraph still
+  orchestrates arms B and C; it does not need a LangChain chat model for that.
 - **tableqa code is vendored, not imported.** tableqa pins Python 3.11 and this project
   uses 3.12, so the DuckDB sandbox and table code are copied with a note of their source.
 

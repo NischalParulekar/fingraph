@@ -83,7 +83,7 @@ def main() -> None:
         text = json.dumps(record, indent=1) + "\n"
         if path.exists() and path.read_text(encoding="utf-8") != text:
             print(f"{path}: CHANGED - the committed split differs from what this code builds")
-        path.write_text(text, encoding="utf-8")
+        path.write_text(text, encoding="utf-8", newline="\n")
         print(f"{path}: {len(ids)} questions, {dict(sorted(strata.items()))}")
 
 
