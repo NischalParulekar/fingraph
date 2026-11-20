@@ -1,0 +1,473 @@
+{
+  "arm": "single_agent",
+  "config": {
+    "arm": "single_agent",
+    "model": "claude-haiku-5-5",
+    "effort": "medium",
+    "max_output_tokens": 4096,
+    "max_steps": 10,
+    "max_question_tokens": 80000,
+    "retrieval": {
+      "mode": "context",
+      "k": 3,
+      "embedding_model": "BAAI/bge-small-en-v1.5",
+      "embedding_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a"
+    },
+    "system_prompt": "You answer questions about one company's financial report. The report has a table and a few paragraphs of text, and the tools are your only access to them:\n- query_table runs SQL against the table,\n- retrieve_text searches the paragraphs,\n- calculate does arithmetic.\n\nHow to work\n- Start by looking at the table with query_table (it is small, so SELECT * is fine) and, if the question may be answered in the text, by searching the paragraphs. You can call several tools in the same turn.\n- Read the header rows: they say which column is which period and what unit the amounts are in.\n- Do every calculation with calculate.\n- Call final_answer when you have the answer. Text you write outside a tool call is not read.\n- You have at most 10 turns, so answer once you are confident.\n\nHow the answer is scored\n- It is compared with a gold answer automatically, so give only the answer itself, never a sentence or an explanation.\n- Text answers: copy the words exactly as they appear in the table or the paragraph.\n- If the question asks for several items, give each one as its own list entry.\n- Numbers you calculate (differences, changes, totals, averages, ratios, percentages): compute them with the calculate tool, never in your head, and give the result rounded to 2 decimal places as a bare number, without currency signs or %.\n- Percentage change is (new - old) / old * 100.\n- Counts: the count as a bare number.\n- `scale` is the unit the number is in. Use \"thousand\", \"million\" or \"billion\" for an amount that the report states in those units (for example a table headed \"In thousands\"), also when you copy the amount as it is. Use \"percent\" for any percentage (give 12.5 for 12.5%). Use \"\" for counts, years, plain ratios and text answers.\n",
+    "tools": [
+      {
+        "name": "query_table",
+        "description": "Run one read-only DuckDB SELECT statement against the report's table `t` and return the result. If the query fails, the error comes back so you can fix it.",
+        "strict": true,
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "sql": {
+              "type": "string",
+              "description": "A single SELECT statement."
+            }
+          },
+          "required": [
+            "sql"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "retrieve_text",
+        "description": "Search the report's paragraphs and return the 3 most relevant ones, best first, each with its paragraph number.",
+        "strict": true,
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "What to look for, in plain words."
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "calculate",
+        "description": "Evaluate an arithmetic expression exactly: numbers, + - * / and parentheses only. Example: \"(1320 - 1086) / 1086 * 100\".",
+        "strict": true,
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "expression": {
+              "type": "string",
+              "description": "The expression to evaluate."
+            }
+          },
+          "required": [
+            "expression"
+          ],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "final_answer",
+        "description": "Give the final answer and finish. This is the only way to answer.",
+        "strict": true,
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "answer": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "The answer: one entry, or one entry per item for a list."
+            },
+            "scale": {
+              "type": "string",
+              "enum": [
+                "",
+                "thousand",
+                "million",
+                "billion",
+                "percent"
+              ],
+              "description": "The unit the answer is expressed in."
+            }
+          },
+          "required": [
+            "answer",
+            "scale"
+          ],
+          "additionalProperties": false
+        }
+      }
+    ]
+  },
+  "complete": true,
+  "planned_questions": 150,
+  "overall": {
+    "n": 150,
+    "em": {
+      "value": 0.6866666666666666,
+      "k": 103,
+      "n": 150,
+      "ci95": [
+        0.6085602497894558,
+        0.7554508589797957
+      ]
+    },
+    "f1": 0.7730666666666667,
+    "confident_wrong": {
+      "value": 0.31333333333333335,
+      "k": 47,
+      "n": 150,
+      "ci95": [
+        0.24454914102020436,
+        0.3914397502105443
+      ]
+    },
+    "abstention": {
+      "value": 0.0,
+      "k": 0,
+      "n": 150,
+      "ci95": [
+        1.734723475976807e-18,
+        0.0249702443680766
+      ]
+    },
+    "selective_accuracy": {
+      "value": 0.6866666666666666,
+      "k": 103,
+      "n": 150,
+      "ci95": [
+        0.6085602497894558,
+        0.7554508589797957
+      ]
+    },
+    "cost_per_1k_usd": 0.45323506666666674,
+    "latency_ms_p50": 3658.3796000049915,
+    "latency_ms_p95": 5302.12588501745,
+    "llm_calls_per_question": 2.5533333333333332,
+    "errors": {}
+  },
+  "answer_from": {
+    "table": {
+      "n": 69,
+      "em": {
+        "value": 0.7971014492753623,
+        "k": 55,
+        "n": 69,
+        "ci95": [
+          0.6877595975522071,
+          0.875106669320965
+        ]
+      },
+      "f1": 0.8115942028985508,
+      "confident_wrong": {
+        "value": 0.2028985507246377,
+        "k": 14,
+        "n": 69,
+        "ci95": [
+          0.12489333067903491,
+          0.31224040244779294
+        ]
+      },
+      "abstention": {
+        "value": 0.0,
+        "k": 0,
+        "n": 69,
+        "ci95": [
+          3.469446951953614e-18,
+          0.05273725818905173
+        ]
+      },
+      "selective_accuracy": {
+        "value": 0.7971014492753623,
+        "k": 55,
+        "n": 69,
+        "ci95": [
+          0.6877595975522071,
+          0.875106669320965
+        ]
+      },
+      "cost_per_1k_usd": 0.4472932608695652,
+      "latency_ms_p50": 3699.1370000177994,
+      "latency_ms_p95": 5192.564880021381,
+      "llm_calls_per_question": 2.710144927536232,
+      "errors": {}
+    },
+    "table-text": {
+      "n": 46,
+      "em": {
+        "value": 0.7391304347826086,
+        "k": 34,
+        "n": 46,
+        "ci95": [
+          0.597408464719844,
+          0.843991135543574
+        ]
+      },
+      "f1": 0.7815217391304349,
+      "confident_wrong": {
+        "value": 0.2608695652173913,
+        "k": 12,
+        "n": 46,
+        "ci95": [
+          0.156008864456426,
+          0.4025915352801559
+        ]
+      },
+      "abstention": {
+        "value": 0.0,
+        "k": 0,
+        "n": 46,
+        "ci95": [
+          0.0,
+          0.07707356308558039
+        ]
+      },
+      "selective_accuracy": {
+        "value": 0.7391304347826086,
+        "k": 34,
+        "n": 46,
+        "ci95": [
+          0.597408464719844,
+          0.843991135543574
+        ]
+      },
+      "cost_per_1k_usd": 0.4322351086956522,
+      "latency_ms_p50": 3600.1844499842264,
+      "latency_ms_p95": 5280.8126250165515,
+      "llm_calls_per_question": 2.5,
+      "errors": {}
+    },
+    "text": {
+      "n": 35,
+      "em": {
+        "value": 0.4,
+        "k": 14,
+        "n": 35,
+        "ci95": [
+          0.2555072885938059,
+          0.5642729098710749
+        ]
+      },
+      "f1": 0.686,
+      "confident_wrong": {
+        "value": 0.6,
+        "k": 21,
+        "n": 35,
+        "ci95": [
+          0.435727090128925,
+          0.7444927114061941
+        ]
+      },
+      "abstention": {
+        "value": 0.0,
+        "k": 0,
+        "n": 35,
+        "ci95": [
+          6.938893903907228e-18,
+          0.09890099232440402
+        ]
+      },
+      "selective_accuracy": {
+        "value": 0.4,
+        "k": 14,
+        "n": 35,
+        "ci95": [
+          0.2555072885938059,
+          0.5642729098710749
+        ]
+      },
+      "cost_per_1k_usd": 0.4925488571428571,
+      "latency_ms_p50": 3656.8578999722376,
+      "latency_ms_p95": 5629.823169979494,
+      "llm_calls_per_question": 2.3142857142857145,
+      "errors": {}
+    }
+  },
+  "answer_type": {
+    "arithmetic": {
+      "n": 66,
+      "em": {
+        "value": 0.8181818181818182,
+        "k": 54,
+        "n": 66,
+        "ci95": [
+          0.7085480732292817,
+          0.8928139359439193
+        ]
+      },
+      "f1": 0.8181818181818182,
+      "confident_wrong": {
+        "value": 0.18181818181818182,
+        "k": 12,
+        "n": 66,
+        "ci95": [
+          0.1071860640560806,
+          0.29145192677071835
+        ]
+      },
+      "abstention": {
+        "value": 0.0,
+        "k": 0,
+        "n": 66,
+        "ci95": [
+          0.0,
+          0.05500255701354129
+        ]
+      },
+      "selective_accuracy": {
+        "value": 0.8181818181818182,
+        "k": 54,
+        "n": 66,
+        "ci95": [
+          0.7085480732292817,
+          0.8928139359439193
+        ]
+      },
+      "cost_per_1k_usd": 0.47004765151515154,
+      "latency_ms_p50": 3942.8262500150595,
+      "latency_ms_p95": 5497.091225028271,
+      "llm_calls_per_question": 3.015151515151515,
+      "errors": {}
+    },
+    "count": {
+      "n": 3,
+      "em": {
+        "value": 1.0,
+        "k": 3,
+        "n": 3,
+        "ci95": [
+          0.4385029682449546,
+          1.0
+        ]
+      },
+      "f1": 1.0,
+      "confident_wrong": {
+        "value": 0.0,
+        "k": 0,
+        "n": 3,
+        "ci95": [
+          5.551115123125783e-17,
+          0.5614970317550454
+        ]
+      },
+      "abstention": {
+        "value": 0.0,
+        "k": 0,
+        "n": 3,
+        "ci95": [
+          5.551115123125783e-17,
+          0.5614970317550454
+        ]
+      },
+      "selective_accuracy": {
+        "value": 1.0,
+        "k": 3,
+        "n": 3,
+        "ci95": [
+          0.4385029682449546,
+          1.0
+        ]
+      },
+      "cost_per_1k_usd": 0.389055,
+      "latency_ms_p50": 2880.072799976915,
+      "latency_ms_p95": 3581.9428400078323,
+      "llm_calls_per_question": 2.0,
+      "errors": {}
+    },
+    "multi-span": {
+      "n": 19,
+      "em": {
+        "value": 0.7894736842105263,
+        "k": 15,
+        "n": 19,
+        "ci95": [
+          0.5666572155618583,
+          0.9149232336708375
+        ]
+      },
+      "f1": 0.8421052631578947,
+      "confident_wrong": {
+        "value": 0.21052631578947367,
+        "k": 4,
+        "n": 19,
+        "ci95": [
+          0.08507676632916253,
+          0.43334278443814167
+        ]
+      },
+      "abstention": {
+        "value": 0.0,
+        "k": 0,
+        "n": 19,
+        "ci95": [
+          0.0,
+          0.16817922405261626
+        ]
+      },
+      "selective_accuracy": {
+        "value": 0.7894736842105263,
+        "k": 15,
+        "n": 19,
+        "ci95": [
+          0.5666572155618583,
+          0.9149232336708375
+        ]
+      },
+      "cost_per_1k_usd": 0.42877447368421057,
+      "latency_ms_p50": 3120.6337000476196,
+      "latency_ms_p95": 5267.382960033141,
+      "llm_calls_per_question": 2.210526315789474,
+      "errors": {}
+    },
+    "span": {
+      "n": 62,
+      "em": {
+        "value": 0.5,
+        "k": 31,
+        "n": 62,
+        "ci95": [
+          0.3792274119456608,
+          0.6207725880543392
+        ]
+      },
+      "f1": 0.6929032258064516,
+      "confident_wrong": {
+        "value": 0.5,
+        "k": 31,
+        "n": 62,
+        "ci95": [
+          0.3792274119456608,
+          0.6207725880543392
+        ]
+      },
+      "abstention": {
+        "value": 0.0,
+        "k": 0,
+        "n": 62,
+        "ci95": [
+          0.0,
+          0.058344072101372484
+        ]
+      },
+      "selective_accuracy": {
+        "value": 0.5,
+        "k": 31,
+        "n": 62,
+        "ci95": [
+          0.3792274119456608,
+          0.6207725880543392
+        ]
+      },
+      "cost_per_1k_usd": 0.4459392741935484,
+      "latency_ms_p50": 3341.4326999918558,
+      "latency_ms_p95": 5070.9482649806905,
+      "llm_calls_per_question": 2.193548387096774,
+      "errors": {}
+    }
+  }
+}
