@@ -24,3 +24,10 @@ Thumbs.db
 
 # Downloaded dataset: TAT-QA is not redistributed here; `make data` fetches it.
 /data/
+
+# Terraform: the state holds secrets (database password, API key); keep it local.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example

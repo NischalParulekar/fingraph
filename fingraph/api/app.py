@@ -189,6 +189,10 @@ def create_app(
         if settings.client_ip_header:
             value = request.headers.get(settings.client_ip_header, "").strip()
             if value:
+                # CloudFront-Viewer-Address is "ip:port" (IPv6 too: the port is always
+                # last); the port changes per connection, so only the address keys limits.
+                if settings.client_ip_header.lower() == "cloudfront-viewer-address":
+                    value = value.rsplit(":", 1)[0]
                 return value
         return request.client.host if request.client else "unknown"
 
