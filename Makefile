@@ -6,7 +6,7 @@
 # make retrieval  retrieval hit/recall, context vs corpus mode (no model calls)
 # make test, make lint
 
-.PHONY: install data splits db stack aws-up aws-down retrieval test lint eval-dev-a eval-heldout report plots labels
+.PHONY: install data splits db stack aws-up aws-down retrieval test lint eval-dev-a eval-heldout report plots labels demo ui
 
 install:
 	uv sync --locked --extra torch --extra onnx
@@ -65,3 +65,11 @@ aws-up:
 
 aws-down:
 	cd infra/aws && terraform destroy
+
+# Free: the recorded demo's data, from the committed dev runs (frontend/public/demo.json).
+demo:
+	uv run python scripts/build_demo.py
+
+# The UI on http://localhost:5173 against the API on :8000 (make stack first).
+ui:
+	cd frontend && npm install && npm run dev

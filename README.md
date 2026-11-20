@@ -252,6 +252,24 @@ latency, model calls, tokens and cost, verifier verdicts and reviews; Grafana
 (`localhost:3001`) has a dashboard for them. The cache, rate limit and metrics follow
 tableqa's service.
 
+## The demo UI
+
+`frontend/` is a small React app (Vite). Pick a question, choose an arm, and ask: the
+report's table and paragraphs are shown with the evidence for the answer marked (cells
+the arm read, numbers that match its answer or calculations, passages it quoted), next
+to the answer, the verifier's verdict claim by claim, the calculations, and TAT-QA's
+own answer. When Arm C pauses for review, the reviewer approves, corrects or rejects
+the draft there.
+
+![The demo UI: Arm C's answer to a dev question, with the table cells it read highlighted](docs/ui-recorded.jpg)
+
+It runs two ways. **Recorded** (`npm run dev:recorded`, and the GitHub Pages site)
+replays 14 dev questions from the committed runs (`make demo` rebuilds
+`frontend/public/demo.json`, no model calls); every answer is exactly what the run
+recorded. **Live** (`make stack`, then `make ui`) asks the API. GitHub Pages
+(`.github/workflows/pages.yml`, run by hand) needs the repository to be public or a
+paid plan.
+
 ## Deployment
 
 **Render (the public demo).** `render.yaml` is a Blueprint: a free Docker web service, a
