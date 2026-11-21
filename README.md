@@ -417,6 +417,11 @@ reached through it, and nothing else (`infra/aws/bedrock.tf`).
 `make bedrock-dev` runs Arm C on the dev subset through each provider in turn, and
 `make bedrock-report` compares them (`results/bedrock-dev/`).
 
+**Not measured yet.** The AWS project used so far (Free plan, new AWS experience) is
+refused Haiku 5.5 with "not available for this account". So no Bedrock results exist,
+and no other model was swapped in. The checks and the error are in
+[docs/bedrock.md](docs/bedrock.md#status-not-available-to-this-project-21-november-2026).
+
 ## Tracing with LangSmith
 
 With `LANGSMITH_TRACING=true` and a `LANGSMITH_API_KEY`, each question becomes one

@@ -4,6 +4,52 @@ What was checked before any code was written, with sources and the date checked.
 fact below was read on **21 November 2026** from the AWS page named next to it. Model
 IDs, regions and prices change; re-check them before relying on this page.
 
+## Status: not available to this project (21 November 2026)
+
+**Claude Haiku 5.5 could not be invoked from the AWS project used for this work, so
+the Bedrock measurement (spec section 3) has not been run.** Per the spec, no other
+model was substituted.
+
+**The project:** created through the new AWS experience, on the Free plan, with
+`ap-southeast-2` (Sydney) as its only Region.
+
+**What was checked, in order:**
+
+1. **The free read-only calls succeeded.** `GetFoundationModel` lists
+   `anthropic.claude-haiku-5-5` as `ACTIVE`, with inference type `INFERENCE_PROFILE`
+   only. `ListInferenceProfiles` shows two active profiles for it:
+   - `au.anthropic.claude-haiku-5-5`, routing to `ap-southeast-2` and `ap-southeast-4`;
+   - `global.anthropic.claude-haiku-5-5`.
+
+   `GetFoundationModelAvailability` returns `authorizationStatus: AUTHORIZED`,
+   `entitlementAvailability: AVAILABLE`, `regionAvailability: AVAILABLE` and
+   `agreementAvailability: NOT_AVAILABLE`.
+2. **A budget alarm went first** (`fingraph-bedrock`, $5 a month), as the spec requires.
+3. **One Converse call was made through each profile,** with FinGraph's own settings.
+   Both returned `AccessDeniedException`: "anthropic.claude-haiku-5-5 is not available
+   for this account. You can explore other available models on Amazon Bedrock. For
+   additional access options, contact AWS Sales". Nothing was billed.
+4. **No subscription was started.** Afterwards the agreement status was still
+   `NOT_AVAILABLE`, not `PENDING`, so no AWS Marketplace subscription is waiting to
+   finish.
+
+**Likely cause, not confirmed:**
+
+- AWS's list of services for new-experience projects says "Multi-Region or cross-Region
+  features are not supported for any services", and allows AWS Marketplace on the Free
+  plan for "Bedrock and Free only"
+  ([supported services](https://docs.aws.amazon.com/accounts/latest/reference/supported-services-sign-up-new.html)).
+- Haiku 5.5 is billed through AWS Marketplace and reachable only through cross-region
+  profiles.
+- The error is not the Marketplace-permission error AWS documents for first calls
+  ([re:Post](https://repost.aws/knowledge-center/bedrock-resolve-marketplace-permission)).
+
+**What would unblock it:** upgrading the project to the paid plan in AWS Settings, or
+using an AWS account outside the new experience. Then re-run the checks above.
+
+The provider code, the IAM policy and the tests do not depend on this. They are tested
+against botocore's Converse schema without AWS calls.
+
 ## Is Claude Haiku 5.5 available on Bedrock?
 
 **Yes.** Source: the [Claude Haiku 5.5 model card][card].
@@ -30,6 +76,10 @@ that must stay in-country; AWS documents an IAM deny on `aws:RequestedRegion =
 "unspecified"` that blocks global routing ([prerequisites][prereq]). The model card gives
 no destination list for the global profile; `aws bedrock get-inference-profile` called
 from the source region shows the current one.
+
+**From ap-southeast-2 (Sydney)** both the `au.` profile (Sydney and Melbourne only, 10%
+dearer) and the `global.` profile are offered, as `ListInferenceProfiles` showed above.
+Set `BEDROCK_MODEL_ID=au.anthropic.claude-haiku-5-5` to keep requests in Australia.
 
 ## Model access: what the account has to do
 
