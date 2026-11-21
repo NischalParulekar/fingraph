@@ -51,8 +51,27 @@ model was substituted.
   error for first calls; this is a different one
   ([re:Post](https://repost.aws/knowledge-center/bedrock-resolve-marketplace-permission)).
 
-**What should unblock it:** upgrading the project to the paid plan in AWS Settings.
-Then re-run the checks above.
+**Upgrading to the paid plan was not enough (re-checked the same day).**
+
+- **Plan:** after the upgrade, `GetAccountPlanState` showed `PAID`.
+- **Agreement:** `CreateFoundationModelAgreement` accepted the model's offer, and the
+  agreement went `PENDING` → `AVAILABLE` in about a minute.
+- **Calls:** Converse through both profiles still returned the same "not available for
+  this account" error.
+- **Quota:** the project's Service Quotas for the model were 0:
+  - `L-F26CA8D1` (global cross-region tokens per minute for Haiku 5.5): 0;
+  - `L-47520EB7` (cross-region tokens per minute): 0;
+  - AWS's default for both is 10,000,000.
+
+  Service Quotas rejects any request at or below the default ("You must provide a quota
+  value greater than the default quota value of 1.0E7"), so the quota cannot be raised
+  from the console.
+
+AWS's article on this error says "certain AWS Accounts have additional account-level
+eligibility requirements for certain models" and to contact Support
+([re:Post](https://repost.aws/knowledge-center/bedrock-serverless-models-access-denied)).
+**What unblocks it:** a Support case asking for the quota to be set (FinGraph's Arm C
+needs about 56,000 tokens per minute, run one question at a time).
 
 The provider code, the IAM policy and the tests do not depend on this. They are tested
 against botocore's Converse schema without AWS calls.
