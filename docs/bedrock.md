@@ -33,19 +33,26 @@ model was substituted.
    `NOT_AVAILABLE`, not `PENDING`, so no AWS Marketplace subscription is waiting to
    finish.
 
-**Likely cause, not confirmed:**
+**Likely cause, not confirmed: the Free plan itself.**
 
-- AWS's list of services for new-experience projects says "Multi-Region or cross-Region
-  features are not supported for any services", and allows AWS Marketplace on the Free
-  plan for "Bedrock and Free only"
-  ([supported services](https://docs.aws.amazon.com/accounts/latest/reference/supported-services-sign-up-new.html)).
-- Haiku 5.5 is billed through AWS Marketplace and reachable only through cross-region
-  profiles.
-- The error is not the Marketplace-permission error AWS documents for first calls
+- **The project's policies do not block it.** Both the Free-plan and paid-plan SCPs AWS
+  applies to projects allow `bedrock:*`, `aws-marketplace:*` and
+  `aws-external-anthropic:*`. The Region SCP exempts `bedrock:InvokeModel` and allows the
+  `unspecified` Region that global routing uses
+  ([SCPs for projects](https://docs.aws.amazon.com/accounts/latest/reference/scps-and-rcps-for-projects.html)).
+  So neither cross-Region routing nor an SCP is the cause, and the error is not an SCP
+  denial.
+- **The Free plan leaves out Marketplace charges.** AWS's Free-plan page says Free
+  plans "don't include access to … certain AWS Marketplace offers that can incur
+  charges", which "you can access … by upgrading to the Paid account plan"
+  ([choosing a plan](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-plans.html)).
+  Haiku 5.5 on Bedrock is billed through AWS Marketplace.
+- **It is not the first-call permission error.** AWS documents a Marketplace-permission
+  error for first calls; this is a different one
   ([re:Post](https://repost.aws/knowledge-center/bedrock-resolve-marketplace-permission)).
 
-**What would unblock it:** upgrading the project to the paid plan in AWS Settings, or
-using an AWS account outside the new experience. Then re-run the checks above.
+**What should unblock it:** upgrading the project to the paid plan in AWS Settings.
+Then re-run the checks above.
 
 The provider code, the IAM policy and the tests do not depend on this. They are tested
 against botocore's Converse schema without AWS calls.
